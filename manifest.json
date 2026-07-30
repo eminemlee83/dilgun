@@ -21,6 +21,7 @@
     { "src": "icon.svg",               "sizes": "any",     "type": "image/svg+xml" }
   ],
   "shortcuts": [
+    { "name": "시중가 입력", "short_name": "시중가", "url": "./price_entry.html" },
     { "name": "상품 등록", "short_name": "등록", "url": "./catalog_admin.html" },
     { "name": "일괄 등록", "short_name": "일괄", "url": "./bulk_import.html" },
     { "name": "시세 관리", "short_name": "시세", "url": "./admin_supabase.html" }
