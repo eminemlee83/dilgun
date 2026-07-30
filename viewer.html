@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#EDE1C7">
+<title>딜군</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --ink:#4E6144; --deep:#2E3B28;
+  --rule:#E2DCCF; --wash:#F7F4EC; --paper:#fff;
+  --win:#2F7D4F; --win-bg:#E7F3EA;
+  --lose:#B4432A; --lose-bg:#FBEEE8;
+  --hold:#8A6A20; --hold-bg:#FBF2DC;
+  --dim:#6E7166; --faint:#9C9E8F;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--wash);color:#1F241C;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:40px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* 헤더 */
+.hero{background:var(--deep);color:#fff;padding:22px 18px 18px}
+.hero h1{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.hero p{color:#AEB59D;font-size:12.5px;margin-top:4px}
+
+/* 검색/필터 */
+.filters{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--rule);padding:10px 14px}
+.search{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;font-size:14px;background:var(--wash)}
+.search:focus{outline:none;border-color:var(--ink)}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:6px 13px;border-radius:99px;border:1px solid var(--rule);background:#fff;font-size:12.5px;font-weight:600;color:var(--dim);white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* 정렬 */
+.sortbar{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:12px;color:var(--dim)}
+.sortbar select{margin-left:auto;padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:#fff;font-size:12.5px}
+
+/* 카드 그리드 */
+.grid{padding:4px 14px 20px;display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:520px){ .grid{grid-template-columns:1fr 1fr} }
+
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px;position:relative;overflow:hidden}
+.card.pick{border-color:#D2A55C}
+.card-top{display:flex;align-items:flex-start;gap:10px}
+.card-emoji{font-size:26px;line-height:1}
+.card-name{font-weight:700;font-size:14.5px;letter-spacing:-.2px}
+.card-cat{color:var(--faint);font-size:11.5px;margin-top:1px}
+.card-badges{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;white-space:nowrap}
+.b-pick{background:#FBF2DC;color:#8A6A20}
+.b-new{background:#F0E9D8;color:var(--ink)}
+.b-promo{background:var(--lose-bg);color:var(--lose)}
+
+.card-note{font-size:12px;color:var(--hold);background:var(--hold-bg);border-radius:6px;padding:6px 9px;margin-top:9px;line-height:1.5}
+
+.prices{display:flex;align-items:baseline;gap:10px;margin-top:11px}
+.p-mart{font-size:20px;font-weight:800;font-family:var(--mono)}
+.p-ref{font-size:12.5px;color:var(--faint);text-decoration:line-through;font-family:var(--mono)}
+.verdict{margin-left:auto;font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px}
+.v-win{background:var(--win-bg);color:var(--win)}
+.v-lose{background:var(--lose-bg);color:var(--lose)}
+.v-same{background:#F2F0E8;color:var(--dim)}
+.v-unknown{background:#F2F0E8;color:var(--faint)}
+
+.card-foot{margin-top:8px;font-size:11px;color:var(--faint)}
+
+.empty{padding:60px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.8}
+.empty b{display:block;color:#1F241C;font-size:14px;margin-bottom:4px}
+
+.skel{background:linear-gradient(90deg,#F1EEE4 25%,#F9F6EF 37%,#F1EEE4 63%);background-size:400% 100%;animation:sk 1.4s ease infinite;border-radius:12px;height:118px}
+@keyframes sk{0%{background-position:100% 0}100%{background-position:0 0}}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>군마트 가격 비교</h1>
+  <p id="heroSub">시중가와 비교해서 더 싼 상품만 골라 보여드립니다</p>
+</div>
+
+<div class="filters">
+  <input class="search" id="search" placeholder="상품 검색">
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="sortbar">
+  <span id="countLabel">0개 상품</span>
+  <select id="sort">
+    <option value="pick">추천순</option>
+    <option value="win">가성비순</option>
+    <option value="new">신상순</option>
+    <option value="name">이름순</option>
+  </select>
+</div>
+
+<div class="grid" id="grid">
+  <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+</div>
+
+<script type="module">
+/* 본인 프로젝트 값으로 교체 (admin.html과 동일) */
+const SUPABASE_URL = "https://zxbiwyjlnkiyglbxxsof.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "sb_publishable_BtUydzGa1D7zX-dYpaQ_7Q_aRusBj56";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = id => document.getElementById(id);
+const won = n => (n ?? 0).toLocaleString("ko-KR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const TODAY = new Date().toISOString().slice(0, 10);
+const daysSince = d => d ? Math.floor((new Date(TODAY) - new Date(d)) / 864e5) : 999;
+
+let ITEMS = [];
+let cat = "전체";
+let sort = "pick";
+let q = "";
+
+function verdict(it){
+  const mu = (it.q && it.mart != null) ? it.mart / it.q : null;
+  const ru = (it.rq && it.ref != null) ? it.ref / it.rq : null;
+  if(mu == null || ru == null || it.ru !== it.u) return { v:"unknown", pct:null };
+  const pct = ((mu - ru) / ru) * 100;
+  return { v: pct <= -5 ? "win" : pct >= 5 ? "lose" : "same", pct };
+}
+const V_LABEL = { win:"이득", lose:"주의", same:"비슷", unknown:"정보 없음" };
+
+const isNew   = it => it.added ? daysSince(it.added) <= 30 : false;
+const promoOn = it => !!(it.promo_ends && daysSince(it.promo_ends) <= 0);
+
+async function load(){
+  const { data, error } = await sb.from("products")
+    .select("*").eq("hidden", false).order("name");
+  if(error){
+    $("grid").innerHTML = `<div class="empty"><b>불러오지 못했습니다</b>${esc(error.message)}</div>`;
+    return;
+  }
+  ITEMS = data;
+  buildChips();
+  render();
+}
+
+function buildChips(){
+  const cats = ["전체", ...new Set(ITEMS.map(it => it.cat))];
+  $("chips").innerHTML = cats.map(c =>
+    `<button class="chip" data-c="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join("");
+  $("chips").querySelectorAll("[data-c]").forEach(b => {
+    b.onclick = () => { cat = b.dataset.c; render(); };
+  });
+}
+
+function render(){
+  $("chips").querySelectorAll("[data-c]").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.c === cat);
+  });
+
+  let list = ITEMS.filter(it => cat === "전체" || it.cat === cat);
+  if(q.trim()) list = list.filter(it => it.name.toLowerCase().includes(q.trim().toLowerCase()));
+
+  list = list.map(it => ({ it, v: verdict(it) }));
+
+  const rank = { win:0, same:1, unknown:2, lose:3 };
+  if(sort === "pick")     list.sort((a,b) => (b.it.pick - a.it.pick) || rank[a.v.v]-rank[b.v.v]);
+  else if(sort === "win") list.sort((a,b) => (a.v.pct ?? 999) - (b.v.pct ?? 999));
+  else if(sort === "new") list.sort((a,b) => daysSince(a.it.added) - daysSince(b.it.added));
+  else                    list.sort((a,b) => a.it.name.localeCompare(b.it.name, "ko"));
+
+  $("countLabel").textContent = `${list.length}개 상품`;
+
+  if(!list.length){
+    $("grid").innerHTML = `<div class="empty"><b>해당하는 상품이 없습니다</b>다른 분류나 검색어로 시도해 보세요.</div>`;
+    return;
+  }
+
+  $("grid").innerHTML = list.map(({ it, v }) => {
+    const badges = [
+      it.pick ? `<span class="badge b-pick">⭐ 추천</span>` : "",
+      isNew(it) ? `<span class="badge b-new">🆕 신상</span>` : "",
+      promoOn(it) ? `<span class="badge b-promo">🎉 행사</span>` : "",
+    ].filter(Boolean).join("");
+
+    return `<div class="card ${it.pick ? "pick" : ""}">
+      <div class="card-top">
+        <div class="card-emoji">${it.emoji || "📦"}</div>
+        <div>
+          <div class="card-name">${esc(it.name)}</div>
+          <div class="card-cat">${esc(it.cat)}</div>
+        </div>
+        <div class="card-badges">${badges}</div>
+      </div>
+      ${it.pick && it.pick_note ? `<div class="card-note">${esc(it.pick_note)}</div>` : ""}
+      <div class="prices">
+        <span class="p-mart">${won(it.mart)}원</span>
+        ${it.ref != null ? `<span class="p-ref">${won(it.ref)}원</span>` : ""}
+        <span class="verdict v-${v.v}">${V_LABEL[v.v]}${v.pct != null ? ` ${v.pct > 0 ? "+" : ""}${v.pct.toFixed(0)}%` : ""}</span>
+      </div>
+      <div class="card-foot">${it.ref_date ? `시중가 확인 ${it.ref_date}` : "시중가 정보 없음"}</div>
+    </div>`;
+  }).join("");
+}
+
+$("search").addEventListener("input", e => { q = e.target.value; render(); });
+$("sort").addEventListener("change", e => { sort = e.target.value; render(); });
+
+load();
+</script>
+</body>
+</html>
