@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#EDE1C7">
+<title>딜군 · 일괄 등록</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#4E6144; --deep:#2E3B28;
+  --rule:#E2DCCF; --wash:#F7F4EC; --paper:#fff;
+  --win:#2F7D4F; --win-bg:#E7F3EA;
+  --lose:#B4432A; --lose-bg:#FBEEE8;
+  --hold:#8A6A20; --hold-bg:#FBF2DC;
+  --dim:#6E7166; --faint:#9C9E8F;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--wash);color:#1F241C;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:60px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.board{background:var(--deep);color:#fff;padding:18px}
+.board .mark{font-size:16px;font-weight:800}
+.board .mark span{color:#A8B096;font-weight:600;margin-left:4px}
+.board p{color:#AEB59D;font-size:12px;margin-top:3px}
+
+main{max-width:820px;margin:0 auto;padding:16px}
+.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.sheet-hd{padding:13px 16px;border-bottom:1px solid var(--rule);font-weight:800;font-size:13.5px;display:flex;align-items:center;justify-content:space-between}
+.sheet-hd .r{font-weight:600;color:var(--dim);font-size:12px}
+.sheet-bd{padding:16px}
+
+.note{background:var(--hold-bg);color:var(--hold);border-radius:8px;padding:11px 13px;font-size:12.5px;line-height:1.6}
+
+.drop{border:2px dashed var(--rule);border-radius:10px;padding:24px 16px;text-align:center;color:var(--dim);font-size:13px}
+.drop.over{border-color:var(--ink);background:#F5F1E7}
+input[type=file]{display:block;margin:0 auto 10px}
+
+.btn{appearance:none;border:none;background:var(--ink);color:#fff;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:8px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--rule)}
+.btn.block{width:100%}
+.row-btns{display:flex;gap:8px;margin-top:12px}
+
+/* 열 매핑 */
+.map-grid{display:grid;grid-template-columns:110px 1fr;gap:9px 12px;align-items:center}
+.map-grid label{font-size:12.5px;font-weight:700;color:var(--dim)}
+.map-grid select,.map-grid input{width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:7px;font-size:13px;font-family:inherit;background:#fff}
+.map-grid select:focus,.map-grid input:focus{outline:none;border-color:var(--ink)}
+.req{color:var(--lose)}
+
+/* 미리보기 */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:8px 10px;background:var(--wash);color:var(--dim);font-size:11px;font-weight:700;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--rule)}
+tr:last-child td{border-bottom:none}
+tr.bad td{background:var(--lose-bg)}
+.r{text-align:right}
+.cat-pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#F0E9D8;color:var(--ink);white-space:nowrap}
+.why{font-size:11px;color:var(--lose)}
+.scroll{max-height:340px;overflow:auto}
+
+.stat{display:flex;gap:18px;padding:12px 16px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.stat div{font-size:12px;color:var(--dim)}
+.stat b{display:block;font-family:var(--mono);font-size:19px;color:#1F241C;font-weight:800}
+.stat .hot b{color:var(--lose)}
+
+.bar-wrap{height:7px;background:var(--rule);border-radius:99px;overflow:hidden;margin-top:11px}
+.bar-fill{height:100%;background:var(--win);width:0%;transition:width .2s}
+.progress{font-size:12.5px;color:var(--dim);margin-top:9px;min-height:18px}
+
+.empty{padding:36px 20px;text-align:center;color:var(--dim);font-size:13px}
+.empty b{display:block;color:#1F241C;margin-bottom:3px}
+
+.toast{position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);background:var(--deep);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:600;transition:bottom .25s;z-index:50}
+.toast.on{bottom:22px}
+
+@media (max-width:560px){
+  .map-grid{grid-template-columns:1fr;gap:4px 0}
+  .map-grid label{margin-top:8px}
+}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="board">
+  <div class="mark">딜군<span>일괄 등록</span></div>
+  <p>인가된 경로로 받은 상품 목록 파일을 catalog_items 테이블에 한 번에 넣습니다.</p>
+</div>
+
+<main>
+
+  <div class="sheet">
+    <div class="sheet-hd">1. 파일 선택</div>
+    <div class="sheet-bd">
+      <div class="note">
+        공문 회신·공공데이터포털 내려받기·포털 자체 내보내기 등 <b>정식으로 받은 파일</b>을 넣는 용도입니다.
+        첫 행은 열 이름(헤더)이어야 합니다.
+      </div>
+      <div class="drop" id="drop" style="margin-top:13px">
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+        <div>CSV 또는 엑셀 파일을 선택하세요</div>
+      </div>
+      <div class="progress" id="readMsg"></div>
+    </div>
+  </div>
+
+  <div class="sheet" id="mapSheet" style="display:none">
+    <div class="sheet-hd">2. 열 연결<span class="r" id="colInfo"></span></div>
+    <div class="sheet-bd">
+      <div class="map-grid">
+        <label>상품명 <span class="req">*</span></label>
+        <select id="mapName"></select>
+
+        <label>가격 <span class="req">*</span></label>
+        <select id="mapPrice"></select>
+
+        <label>브랜드</label>
+        <select id="mapBrand"></select>
+
+        <label>카테고리</label>
+        <select id="mapCategory"></select>
+
+        <label>기본 카테고리</label>
+        <select id="fallbackCat"></select>
+      </div>
+      <div class="note" style="margin-top:13px">
+        카테고리 열이 없거나 값이 목록에 없으면 <b>기본 카테고리</b>로 넣습니다. 등록 후 카탈로그 관리자에서 수정할 수 있습니다.
+      </div>
+      <div class="row-btns">
+        <button class="btn block" id="btnPreview">미리보기 만들기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="previewSheet" style="display:none">
+    <div class="sheet-hd">3. 확인 후 등록</div>
+    <div class="stat">
+      <div><b id="stTotal">0</b>전체 행</div>
+      <div><b id="stOk">0</b>등록 가능</div>
+      <div class="hot"><b id="stBad">0</b>제외</div>
+      <div><b id="stDup">0</b>파일 내 중복</div>
+    </div>
+    <div class="scroll" id="previewBody"></div>
+    <div class="sheet-bd">
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--dim)">
+        <input type="checkbox" id="skipExisting" checked style="width:17px;height:17px;flex-shrink:0;margin-top:1px">
+        <span>이미 등록된 상품명은 건너뛰기 (기존 <span class="num" id="existCount">0</span>건과 대조)</span>
+      </label>
+      <div class="row-btns">
+        <button class="btn block" id="btnImport">등록 시작</button>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" id="barFill"></div></div>
+      <div class="progress" id="importMsg"></div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* ── Supabase 설정 : catalog_admin.html과 같은 값 ── */
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* catalog_admin.html 과 동일하게 유지하세요 */
+const CATS = ["화장품","식품","음료","생활용품","건강","의류","전자","유아동","반려동물","기타"];
+
+const CHUNK = 200;   // 한 번에 보낼 행 수
+
+const $ = id => document.getElementById(id);
+const won = n => (n ?? 0).toLocaleString("ko-KR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let ROWS = [];       // 파일에서 읽은 원본 행 (객체 배열)
+let HEADERS = [];    // 열 이름
+let PREPARED = [];   // 검증까지 끝난 등록 후보
+let EXISTING = new Set();
+
+/* ═══ 파일 읽기 ═══════════════════════════════════════════ */
+function readFile(file){
+  $("readMsg").textContent = "읽는 중...";
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result, { type:"array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      ROWS = XLSX.utils.sheet_to_json(sheet, { defval:"" });
+
+      if(!ROWS.length){
+        $("readMsg").textContent = "행이 없습니다. 다른 파일을 선택하세요.";
+        $("mapSheet").style.display = "none";
+        return;
+      }
+
+      HEADERS = Object.keys(ROWS[0]);
+      $("readMsg").textContent = `${won(ROWS.length)}행 · ${HEADERS.length}열을 읽었습니다.`;
+      buildMapping();
+      $("mapSheet").style.display = "block";
+      $("previewSheet").style.display = "none";
+    } catch(err){
+      $("readMsg").textContent = "읽지 못했습니다: " + err.message;
+    }
+  };
+
+  reader.onerror = () => { $("readMsg").textContent = "파일을 열지 못했습니다."; };
+  reader.readAsArrayBuffer(file);
+}
+
+/* 열 이름을 보고 자동으로 후보를 골라 둔다 */
+const GUESS = {
+  name:     ["상품명","제품명","품명","상품","name","product","title"],
+  price:    ["가격","단가","판매가","금액","price","amount"],
+  brand:    ["브랜드","제조사","메이커","brand","maker"],
+  category: ["카테고리","분류","구분","category","cat"],
+};
+
+function guessCol(kind){
+  const keys = GUESS[kind];
+  for(const h of HEADERS){
+    const low = String(h).toLowerCase().replace(/\s/g,"");
+    if(keys.some(k => low.includes(k))) return h;
+  }
+  return "";
+}
+
+function buildMapping(){
+  const opts = (sel, allowEmpty) =>
+    (allowEmpty ? `<option value="">— 사용 안 함 —</option>` : "") +
+    HEADERS.map(h => `<option value="${esc(h)}" ${h === sel ? "selected" : ""}>${esc(h)}</option>`).join("");
+
+  $("mapName").innerHTML     = opts(guessCol("name"), false);
+  $("mapPrice").innerHTML    = opts(guessCol("price"), false);
+  $("mapBrand").innerHTML    = opts(guessCol("brand"), true);
+  $("mapCategory").innerHTML = opts(guessCol("category"), true);
+  $("fallbackCat").innerHTML = CATS.map(c => `<option ${c === "기타" ? "selected" : ""}>${c}</option>`).join("");
+  $("colInfo").textContent   = `${HEADERS.length}개 열`;
+}
+
+/* ═══ 검증 & 미리보기 ═════════════════════════════════════ */
+const toPrice = v => {
+  const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(n) ? n : 0;
+};
+
+function buildPreview(){
+  const cName = $("mapName").value;
+  const cPrice = $("mapPrice").value;
+  const cBrand = $("mapBrand").value;
+  const cCat = $("mapCategory").value;
+  const fallback = $("fallbackCat").value;
+
+  const seen = new Set();
+  let dup = 0;
+
+  PREPARED = ROWS.map((r, i) => {
+    const name = String(r[cName] ?? "").trim();
+    const price = toPrice(r[cPrice]);
+    const brand = cBrand ? String(r[cBrand] ?? "").trim() : "";
+    const rawCat = cCat ? String(r[cCat] ?? "").trim() : "";
+    const category = CATS.includes(rawCat) ? rawCat : fallback;
+
+    let err = null;
+    if(!name) err = "상품명 없음";
+    else if(!price) err = "가격을 읽지 못함";
+    else if(price > 100000000) err = "가격이 너무 큼";
+
+    const key = name.replace(/\s/g,"").toLowerCase();
+    let isDup = false;
+    if(!err){
+      if(seen.has(key)){ isDup = true; dup++; }
+      else seen.add(key);
+    }
+
+    return { line:i + 2, name, brand, price, category, err, isDup };
+  });
+
+  const ok = PREPARED.filter(p => !p.err && !p.isDup).length;
+  $("stTotal").textContent = won(PREPARED.length);
+  $("stOk").textContent    = won(ok);
+  $("stBad").textContent   = won(PREPARED.filter(p => p.err).length);
+  $("stDup").textContent   = won(dup);
+
+  // 앞 200행만 그린다 (2,300행을 전부 그리면 느려짐)
+  const show = PREPARED.slice(0, 200);
+  $("previewBody").innerHTML = `<table><thead><tr>
+      <th style="width:48px">행</th><th>상품명</th><th style="width:100px">브랜드</th>
+      <th style="width:86px">카테고리</th><th class="r" style="width:90px">가격</th>
+    </tr></thead><tbody>${show.map(p => `
+      <tr class="${p.err || p.isDup ? "bad" : ""}">
+        <td class="num" style="color:var(--faint)">${p.line}</td>
+        <td>${esc(p.name) || "<span class='why'>(비어 있음)</span>"}
+          ${p.err ? `<div class="why">${esc(p.err)}</div>` : p.isDup ? `<div class="why">파일 내 중복 — 건너뜁니다</div>` : ""}</td>
+        <td style="color:var(--faint)">${esc(p.brand) || "—"}</td>
+        <td><span class="cat-pill">${esc(p.category)}</span></td>
+        <td class="r num">${p.price ? won(p.price) : "—"}</td>
+      </tr>`).join("")}</tbody></table>
+      ${PREPARED.length > 200 ? `<div style="padding:10px 12px;color:var(--faint);font-size:12px">앞 200행만 표시했습니다. 등록은 전체 행에 적용됩니다.</div>` : ""}`;
+
+  $("previewSheet").style.display = "block";
+  $("btnImport").disabled = ok === 0;
+  $("previewSheet").scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+/* ═══ 기존 상품명 불러오기 (중복 건너뛰기용) ═══════════════ */
+async function loadExisting(){
+  const { data, error } = await sb.from("catalog_items").select("name");
+  if(error) return;
+  EXISTING = new Set(data.map(r => String(r.name).replace(/\s/g,"").toLowerCase()));
+  $("existCount").textContent = won(EXISTING.size);
+}
+
+/* ═══ 청크 단위 등록 ═══════════════════════════════════════ */
+async function runImport(){
+  let list = PREPARED.filter(p => !p.err && !p.isDup);
+
+  if($("skipExisting").checked){
+    const before = list.length;
+    list = list.filter(p => !EXISTING.has(p.name.replace(/\s/g,"").toLowerCase()));
+    const skipped = before - list.length;
+    if(skipped) $("importMsg").textContent = `이미 등록된 ${won(skipped)}건은 제외했습니다.`;
+  }
+
+  if(!list.length){ toast("등록할 행이 없습니다"); return; }
+
+  $("btnImport").disabled = true;
+  let done = 0, failed = 0;
+
+  for(let i = 0; i < list.length; i += CHUNK){
+    const slice = list.slice(i, i + CHUNK).map(p => ({
+      name: p.name, brand: p.brand, price: p.price, category: p.category
+    }));
+
+    const { error } = await sb.from("catalog_items").insert(slice);
+    if(error){
+      failed += slice.length;
+      console.error("등록 실패 구간", i, error);
+    } else {
+      done += slice.length;
+    }
+
+    const pct = Math.round(((i + slice.length) / list.length) * 100);
+    $("barFill").style.width = pct + "%";
+    $("importMsg").textContent = `${won(done)} / ${won(list.length)}건 등록${failed ? ` · 실패 ${won(failed)}건` : ""}`;
+  }
+
+  toast(`${won(done)}건 등록 완료${failed ? ` (실패 ${won(failed)}건)` : ""}`);
+  $("btnImport").disabled = false;
+  await loadExisting();
+}
+
+/* ═══ 토스트 ═══ */
+let toastTimer;
+function toast(msg){
+  $("toast").textContent = msg;
+  $("toast").classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.remove("on"), 2600);
+}
+
+/* ═══ 드래그&드롭 ═══ */
+const drop = $("drop");
+["dragover","dragleave","drop"].forEach(evt => {
+  drop.addEventListener(evt, e => {
+    e.preventDefault();
+    drop.classList.toggle("over", evt === "dragover");
+    if(evt === "drop" && e.dataTransfer.files.length){
+      $("fileInput").files = e.dataTransfer.files;
+      readFile(e.dataTransfer.files[0]);
+    }
+  });
+});
+
+/* ═══ 기동 ═══ */
+$("fileInput").addEventListener("change", e => { if(e.target.files[0]) readFile(e.target.files[0]); });
+$("btnPreview").onclick = buildPreview;
+$("btnImport").onclick = runImport;
+
+loadExisting();
+</script>
+</body>
+</html>
