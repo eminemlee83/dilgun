@@ -2,112 +2,148 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#EDE1C7">
+<meta name="theme-color" content="#2E3B28">
 <title>딜군 · 시중가 입력</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
-  --ink:#4E6144; --deep:#2E3B28;
-  --rule:#E2DCCF; --wash:#F7F4EC; --paper:#fff;
-  --win:#2F7D4F; --win-bg:#E7F3EA;
-  --lose:#B4432A; --lose-bg:#FBEEE8;
-  --hold:#8A6A20; --hold-bg:#FBF2DC;
-  --dim:#6E7166; --faint:#9C9E8F;
-  --gold:#D2A55C;
+  --olive:#4E6144; --deep:#2E3B28; --gold:#D2A55C; --gold-dk:#A67C3A;
+  --wash:#F7F4EC; --paper:#fff; --rule:#E2DCCF; --track:#EFEADF;
+  --ink:#1F241C; --dim:#6E7166; --faint:#9C9E8F;
+  --win:#2F7D4F; --lose:#B4432A; --hold:#8A6A20; --hold-bg:#FBF2DC;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--sans);background:var(--wash);color:#1F241C;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:60px}
+body{font-family:var(--sans);background:var(--wash);color:var(--ink);font-size:14px;line-height:1.5;
+     -webkit-font-smoothing:antialiased;padding-bottom:40px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
 
-.board{background:var(--deep);color:#fff;padding:18px}
-.board .mark{font-size:16px;font-weight:800}
-.board .mark span{color:#AEB59D;font-weight:600;margin-left:4px}
-.board p{color:#D5CFBE;font-size:12px;margin-top:3px}
+.board{background:var(--deep);color:#fff;padding:16px 18px}
+.board .mark{font-size:15.5px;font-weight:800}
+.board .mark span{color:#AEB59D;font-weight:600;margin-left:5px}
 
-main{max-width:520px;margin:0 auto;padding:16px}
+main{max-width:520px;margin:0 auto;padding:14px}
 
-/* 진행률 */
-.progress-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.progress-track{flex:1;height:6px;background:var(--rule);border-radius:99px;overflow:hidden}
-.progress-fill{height:100%;background:var(--ink);border-radius:99px;transition:width .25s}
-.progress-num{font-size:12px;color:var(--dim);white-space:nowrap}
-.progress-num b{color:#1F241C;font-family:var(--mono)}
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bar-tr{flex:1;height:6px;background:var(--rule);border-radius:99px;overflow:hidden}
+.bar-fl{height:100%;background:var(--olive);border-radius:99px;transition:width .25s}
+.bar-n{font-size:12px;color:var(--dim);white-space:nowrap}
+.bar-n b{color:var(--ink);font-family:var(--mono)}
 
-.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:20px;margin-bottom:14px}
+.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:18px;margin-bottom:12px}
 
-.item-name{font-size:19px;font-weight:800;letter-spacing:-.2px;margin-bottom:2px}
-.item-brand{font-size:13px;color:var(--faint);margin-bottom:16px}
+.nm{font-size:18px;font-weight:800;letter-spacing:-.3px;line-height:1.3}
+.br{font-size:12.5px;color:var(--faint);margin-top:3px}
 
-.px-row{display:flex;align-items:baseline;gap:8px;padding:12px 14px;background:var(--wash);border-radius:10px;margin-bottom:16px}
-.px-row .label{font-size:11.5px;color:var(--dim);font-weight:700}
-.px-row .price{font-family:var(--mono);font-size:20px;font-weight:800}
-.px-row .qty{font-size:12.5px;color:var(--dim);margin-left:auto}
-.px-row .qty.warn{color:var(--hold);font-weight:700}
+.px{display:flex;align-items:baseline;gap:9px;padding:11px 13px;background:var(--wash);
+    border-radius:10px;margin:14px 0}
+.px .lb{font-size:11.5px;color:var(--dim);font-weight:700}
+.px .vl{font-family:var(--mono);font-size:19px;font-weight:800}
+.px .qt{margin-left:auto;font-size:12px;color:var(--dim)}
+.px .qt.warn{color:var(--hold);font-weight:700}
 
-.fld{margin-bottom:14px}
+/* ── 네이버 조회 ─────────────────────────────── */
+.find{border-top:1px solid var(--rule);margin-top:16px;padding-top:15px}
+.find-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.find-hd h2{font-size:13px;font-weight:800}
+.find-hd .hint{margin-left:auto;font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+
+.qbox{display:grid;grid-template-columns:1fr auto;gap:7px;margin-bottom:11px}
+.qbox input{padding:9px 11px;border:1px solid var(--rule);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:0}
+.qbox input:focus{outline:none;border-color:var(--olive)}
+.qbox button{padding:9px 14px;border:1px solid var(--rule);background:var(--paper);
+             border-radius:8px;font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap}
+
+.hits{display:flex;flex-direction:column;gap:6px;max-height:290px;overflow-y:auto}
+.hit{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--rule);
+     border-radius:10px;background:var(--paper);text-align:left;width:100%}
+.hit[aria-pressed="true"]{border-color:var(--olive);background:#F3F5F0;box-shadow:inset 0 0 0 1px var(--olive)}
+.hit img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--wash);flex:0 0 auto}
+.hit .t{flex:1;min-width:0}
+.hit .t1{font-size:12.5px;font-weight:600;line-height:1.35;
+         display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hit .t2{font-size:11px;color:var(--faint);margin-top:2px}
+.hit .p{font-family:var(--mono);font-size:14px;font-weight:800;white-space:nowrap;flex:0 0 auto}
+
+.state{padding:16px 4px;font-size:12.5px;color:var(--dim);text-align:center}
+.state a{color:var(--olive);font-weight:700}
+
+/* ── 입력 ────────────────────────────────────── */
+.fld{margin-bottom:13px}
 .fld label{font-size:11.5px;color:var(--dim);font-weight:700;display:block;margin-bottom:5px}
-.fld input,.fld select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;font-size:14px;font-family:inherit}
-.fld input:focus,.fld select:focus{outline:none;border-color:var(--ink)}
-.fld.price input{font-family:var(--mono);font-size:22px;font-weight:800;padding:12px 14px}
+.fld input,.fld select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;
+                       font-size:14px;font-family:inherit}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--olive)}
+.fld.big input{font-family:var(--mono);font-size:21px;font-weight:800;padding:12px 14px}
+.pair{display:grid;grid-template-columns:1fr 88px;gap:8px}
 
-.qty-pair{display:grid;grid-template-columns:1fr 84px;gap:8px}
-
-.toggle-link{font-size:12px;color:var(--ink);font-weight:700;cursor:pointer;display:inline-block;margin-bottom:14px;user-select:none}
+.more{font-size:12.5px;color:var(--olive);font-weight:700;cursor:pointer;
+      display:inline-block;margin:4px 0 13px;user-select:none}
 .detail{display:none}
 .detail.on{display:block}
 
-.btn{appearance:none;border:none;background:var(--ink);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:9px;cursor:pointer;width:100%}
+.btn{border:none;background:var(--olive);color:#fff;font-weight:700;font-size:14.5px;
+     padding:13px 18px;border-radius:9px;width:100%}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.ghost{background:#fff;color:var(--dim);border:1px solid var(--rule)}
-.row-btns{display:flex;gap:8px}
-.row-btns .btn.ghost{flex:0 0 96px}
-.row-btns .btn.primary{flex:1}
+.btn.ghost{background:var(--paper);color:var(--dim);border:1px solid var(--rule)}
+.acts{display:flex;gap:8px;margin-top:4px}
+.acts .ghost{flex:0 0 100px}
+.acts .go{flex:1}
 
-.empty{padding:60px 20px;text-align:center;color:var(--dim);font-size:13.5px}
-.empty b{display:block;color:#1F241C;font-size:16px;margin-bottom:6px}
+.blank{padding:56px 20px;text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7}
+.blank b{display:block;color:var(--ink);font-size:17px;font-weight:800;margin-bottom:7px}
 
-.toast{position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);background:var(--deep);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:600;transition:bottom .25s;z-index:50}
+.toast{position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);background:var(--deep);
+       color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:600;
+       transition:bottom .25s;z-index:50}
 .toast.on{bottom:22px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
 
 <div class="board">
   <div class="mark">딜군<span>시중가 입력</span></div>
-  <p>PX가는 이미 있습니다. 시중가만 넣으면 판정이 완성됩니다.</p>
 </div>
 
 <main>
-  <div class="progress-wrap">
-    <div class="progress-track"><div class="progress-fill" id="pfill" style="width:0%"></div></div>
-    <div class="progress-num"><b id="pdone">0</b> / <b id="ptotal">0</b></div>
+  <div class="bar">
+    <div class="bar-tr"><div class="bar-fl" id="pfill" style="width:0%"></div></div>
+    <div class="bar-n"><b id="pdone">0</b> / <b id="ptotal">0</b></div>
   </div>
-
   <div id="stage"></div>
 </main>
 
 <div class="toast" id="toast"></div>
 
 <script type="module">
-const SUPABASE_URL = "https://zxbiwyjlnkiyglbxxsof.supabase.co/";
-const SUPABASE_ANON_KEY = "sb_publishable_BtUydzGa1D7zX-dYpaQ_7Q_aRusBj56";
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const $ = id => document.getElementById(id);
 const won = n => (n ?? 0).toLocaleString("ko-KR");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const CATS = ["화장품","식품","음료","생활용품","건강","의류","전자","유아동","반려동물","기타"];
-const today = () => new Date().toISOString().slice(0,10);
+const today = () => new Date().toISOString().slice(0, 10);
 
-let QUEUE = [];
-let TOTAL = 0;
+/* PX 상품명에는 (영외)·(펫)·[양념갈비 맛] 같은 꼬리표가 붙어 있어
+   그대로 검색하면 결과가 안 나옵니다. 괄호 안을 걷어냅니다. */
+const cleanQuery = s => String(s ?? "")
+  .replace(/\([^)]*\)/g, " ")
+  .replace(/\[[^\]]*\]/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+let QUEUE = [], TOTAL = 0, HITS = [], picked = -1;
 
 function toast(msg){
   $("toast").textContent = msg;
@@ -115,120 +151,196 @@ function toast(msg){
   setTimeout(() => $("toast").classList.remove("on"), 1800);
 }
 
-/* ═══ 시작 : catalog_items 중 products에 아직 없는 것만 큐에 담기 ═══ */
+/* ═══ 남은 상품 추리기 ═══════════════════════════════════ */
 async function boot(){
   const [{ data: cat, error: e1 }, { data: prod, error: e2 }] = await Promise.all([
     sb.from("catalog_items").select("name,brand,price,category,q,u").order("created_at"),
     sb.from("products").select("name")
   ]);
-
   if(e1 || e2){
-    $("stage").innerHTML = `<div class="empty"><b>불러오지 못했습니다</b>${esc((e1||e2).message)}</div>`;
+    $("stage").innerHTML = `<div class="blank"><b>불러오지 못했습니다</b>${esc((e1||e2).message)}</div>`;
     return;
   }
-
-  const done = new Set(prod.map(p => String(p.name).replace(/\s/g,"").toLowerCase()));
-  QUEUE = cat.filter(c => !done.has(String(c.name).replace(/\s/g,"").toLowerCase()));
+  const key = s => String(s).replace(/\s/g, "").toLowerCase();
+  const done = new Set(prod.map(p => key(p.name)));
+  QUEUE = cat.filter(c => !done.has(key(c.name)));
   TOTAL = cat.length;
   $("ptotal").textContent = won(TOTAL);
   render();
 }
 
-function updateProgress(){
-  const doneCount = TOTAL - QUEUE.length;
-  $("pdone").textContent = won(doneCount);
-  $("pfill").style.width = TOTAL ? `${doneCount / TOTAL * 100}%` : "0%";
+function progress(){
+  const d = TOTAL - QUEUE.length;
+  $("pdone").textContent = won(d);
+  $("pfill").style.width = TOTAL ? `${d / TOTAL * 100}%` : "0%";
 }
 
+/* ═══ 화면 ═══════════════════════════════════════════════ */
 function render(){
-  updateProgress();
+  progress();
+  HITS = []; picked = -1;
 
   if(!QUEUE.length){
-    $("stage").innerHTML = `<div class="empty"><b>전부 끝났습니다</b>시중가 입력할 상품이 더 없습니다.</div>`;
+    $("stage").innerHTML = `<div class="blank"><b>전부 끝났습니다</b>시중가를 넣을 상품이 더 없습니다.</div>`;
     return;
   }
 
   const it = QUEUE[0];
   const hasQty = it.q && it.u;
   const catOk = CATS.includes(it.category);
+  const q0 = cleanQuery(it.name);
 
   $("stage").innerHTML = `
     <div class="sheet">
-      <div class="item-name">${esc(it.name)}</div>
-      <div class="item-brand">${esc(it.brand) || "브랜드 정보 없음"}</div>
+      <div class="nm">${esc(it.name)}</div>
+      <div class="br">${esc(it.brand) || "브랜드 정보 없음"}</div>
 
-      <div class="px-row">
-        <span class="label">PX가</span>
-        <span class="price num">${won(it.price)}원</span>
-        <span class="qty ${hasQty ? "" : "warn"}">${hasQty ? esc(it.q) + esc(it.u) : "용량 미확인 · 아래서 입력"}</span>
+      <div class="px">
+        <span class="lb">PX가</span>
+        <span class="vl">${won(it.price)}원</span>
+        <span class="qt ${hasQty ? "" : "warn"}">${hasQty ? esc(it.q) + esc(it.u) : "용량 미확인"}</span>
       </div>
 
-      <div class="fld price">
-        <label>시중가 (네이버쇼핑·쿠팡 최저가)</label>
-        <input type="number" id="refPrice" inputmode="numeric" placeholder="숫자만 입력">
+      <div class="find">
+        <div class="find-hd">
+          <h2>네이버쇼핑에서 찾기</h2>
+          <span class="hint" id="hint"></span>
+        </div>
+        <div class="qbox">
+          <input id="q" value="${esc(q0)}" placeholder="검색어">
+          <button id="btnFind">다시 찾기</button>
+        </div>
+        <div class="hits" id="hits"></div>
+        <div class="state" id="state">찾는 중…</div>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="fld big">
+        <label>시중가</label>
+        <input type="number" id="ref" inputmode="numeric" placeholder="위에서 고르거나 직접 입력">
       </div>
 
-      <span class="toggle-link" id="toggleDetail">용량 · 카테고리 확인 ${hasQty && catOk ? "" : "⚠️"}</span>
+      <span class="more" id="more">용량 · 카테고리 · 사진 ${hasQty && catOk ? "" : "⚠️"}</span>
 
-      <div class="detail ${hasQty && catOk ? "" : "on"}" id="detailBox">
+      <div class="detail ${hasQty && catOk ? "" : "on"}" id="detail">
         <div class="fld">
           <label>카테고리</label>
-          <select id="fCat">
-            ${CATS.map(c => `<option ${c === it.category ? "selected" : ""}>${c}</option>`).join("")}
-          </select>
+          <select id="fCat">${CATS.map(c => `<option ${c === it.category ? "selected" : ""}>${c}</option>`).join("")}</select>
+        </div>
+        <div class="fld">
+          <label>제품 사진 주소</label>
+          <input type="url" id="fImg" placeholder="위에서 고르면 자동으로 채워집니다">
         </div>
         <div class="fld">
           <label>PX가 기준 용량</label>
-          <div class="qty-pair">
+          <div class="pair">
             <input type="number" id="fQ" step="any" value="${it.q ?? ""}" placeholder="수량">
-            <input type="text" id="fU" value="${it.u ?? ""}" placeholder="단위(g/ml)">
+            <input type="text" id="fU" value="${it.u ?? ""}" placeholder="g / ml / 개">
           </div>
         </div>
         <div class="fld">
           <label>시중가 기준 용량 (다르면 수정)</label>
-          <div class="qty-pair">
+          <div class="pair">
             <input type="number" id="fRQ" step="any" value="${it.q ?? ""}" placeholder="수량">
-            <input type="text" id="fRU" value="${it.u ?? ""}" placeholder="단위(g/ml)">
+            <input type="text" id="fRU" value="${it.u ?? ""}" placeholder="g / ml / 개">
           </div>
         </div>
       </div>
 
-      <div class="row-btns">
-        <button class="btn ghost" id="btnSkip">건너뛰기</button>
-        <button class="btn primary" id="btnSave">등록하고 다음</button>
+      <div class="acts">
+        <button class="btn ghost" id="skip">건너뛰기</button>
+        <button class="btn go" id="save">등록하고 다음</button>
       </div>
     </div>`;
 
-  $("toggleDetail").onclick = () => $("detailBox").classList.toggle("on");
-  $("btnSkip").onclick = () => { QUEUE.shift(); render(); };
-  $("btnSave").onclick = save;
+  $("more").onclick   = () => $("detail").classList.toggle("on");
+  $("skip").onclick   = () => { QUEUE.shift(); render(); };
+  $("save").onclick   = save;
+  $("btnFind").onclick = () => find($("q").value);
+  $("q").onkeydown    = e => { if(e.key === "Enter") find($("q").value); };
+  $("ref").onkeydown  = e => { if(e.key === "Enter") save(); };
 
-  const priceInput = $("refPrice");
-  priceInput.focus();
-  priceInput.onkeydown = e => { if(e.key === "Enter") save(); };
+  find(q0);
 }
 
+/* ═══ 네이버 조회 ════════════════════════════════════════ */
+async function find(query){
+  const term = String(query ?? "").trim();
+  $("hits").innerHTML = "";
+  $("hint").textContent = "";
+  if(!term){ $("state").textContent = "검색어를 넣어주세요."; return; }
+
+  $("state").textContent = "찾는 중…";
+
+  const { data, error } = await sb.functions.invoke("naver-price", { body: { query: term, display: 10 } });
+
+  const naverLink = `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(term)}`;
+
+  if(error || data?.error){
+    $("state").innerHTML = `조회하지 못했습니다 · ${esc(data?.error || error.message)}<br>
+      <a href="${naverLink}" target="_blank" rel="noopener">네이버에서 직접 보기</a>`;
+    return;
+  }
+
+  HITS = data.items ?? [];
+  if(!HITS.length){
+    $("state").innerHTML = `결과가 없습니다. 검색어를 줄여보세요.<br>
+      <a href="${naverLink}" target="_blank" rel="noopener">네이버에서 직접 보기</a>`;
+    return;
+  }
+
+  $("hint").textContent = `최저 ${won(data.lowest)} · 중앙 ${won(data.median)}원`;
+  $("state").innerHTML = `<a href="${naverLink}" target="_blank" rel="noopener">네이버에서 더 보기</a>`;
+
+  $("hits").innerHTML = HITS.map((h, i) => `
+    <button class="hit" data-i="${i}" aria-pressed="false">
+      ${h.image ? `<img src="${esc(h.image)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : `<img alt="">`}
+      <span class="t">
+        <span class="t1">${esc(h.title)}</span>
+        <span class="t2">${esc(h.mall)}${h.brand ? " · " + esc(h.brand) : ""}</span>
+      </span>
+      <span class="p">${won(h.price)}원</span>
+    </button>`).join("");
+
+  $("hits").querySelectorAll("[data-i]").forEach(b => b.onclick = () => pick(Number(b.dataset.i)));
+}
+
+function pick(i){
+  const h = HITS[i];
+  if(!h) return;
+  picked = i;
+  $("ref").value = h.price;
+  if(h.image) $("fImg").value = h.image;
+  $("hits").querySelectorAll("[data-i]").forEach(b =>
+    b.setAttribute("aria-pressed", Number(b.dataset.i) === i));
+}
+
+/* ═══ 저장 ═══════════════════════════════════════════════ */
 async function save(){
   const it = QUEUE[0];
-  const ref = Number($("refPrice").value);
-  if(!ref){ toast("시중가를 입력하세요"); $("refPrice").focus(); return; }
+  const ref = Number($("ref").value);
+  if(!ref){ toast("시중가를 넣어주세요"); $("ref").focus(); return; }
 
-  const cat = $("fCat").value;
   const q  = Number($("fQ").value)  || null;
   const u  = $("fU").value.trim()   || null;
   const rq = Number($("fRQ").value) || q;
   const ru = $("fRU").value.trim()  || u;
 
-  $("btnSave").disabled = true;
+  $("save").disabled = true;
   const { error } = await sb.from("products").insert({
-    name: it.name, cat, mart: it.price, q, u,
-    ref, rq, ru, ref_date: today(), added: today(), hidden: false
+    name: it.name,
+    cat: $("fCat").value,
+    mart: it.price,
+    img: $("fImg").value.trim() || null,
+    q, u, ref, rq, ru,
+    ref_date: today(), added: today(), hidden: false
   });
-  $("btnSave").disabled = false;
+  $("save").disabled = false;
 
   if(error){ toast("저장 실패: " + error.message); return; }
   QUEUE.shift();
-  toast("등록됨");
+  toast("등록했습니다");
   render();
 }
 
