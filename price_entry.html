@@ -63,6 +63,24 @@ main{max-width:520px;margin:0 auto;padding:14px}
              border-radius:8px;font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap}
 
 .hits{display:flex;flex-direction:column;gap:6px;max-height:290px;overflow-y:auto}
+
+.photo-row{display:flex;align-items:center;gap:10px}
+.photo-prev{
+  width:54px;height:54px;border-radius:10px;background:var(--wash);
+  border:1px dashed var(--rule);object-fit:cover;flex:0 0 auto;
+  visibility:hidden;
+}
+.photo-pick{
+  flex:1;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;
+  background:var(--paper);font-size:12.5px;font-weight:700;color:var(--dim);
+  display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+  min-width:0;
+}
+.photo-pick input{display:none}
+.photo-state{font-size:11.5px;color:var(--faint);margin-top:6px}
+.photo-state.err{color:var(--lose)}
+.photo-state.ok{color:var(--win)}
+.photo-clear{font-size:11.5px;color:var(--dim);text-decoration:underline;cursor:pointer;flex:0 0 auto;background:none;border:none;padding:0}
 .hit{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--rule);
      border-radius:10px;background:var(--paper);text-align:left;width:100%}
 .hit[aria-pressed="true"]{border-color:var(--olive);background:#F3F5F0;box-shadow:inset 0 0 0 1px var(--olive)}
@@ -229,8 +247,17 @@ function render(){
           <select id="fCat">${CATS.map(c => `<option ${c === it.category ? "selected" : ""}>${c}</option>`).join("")}</select>
         </div>
         <div class="fld">
-          <label>제품 사진 주소</label>
-          <input type="url" id="fImg" placeholder="위에서 고르면 자동으로 채워집니다">
+          <label>제품 사진</label>
+          <div class="photo-row">
+            <img class="photo-prev" id="photoPrev" alt="">
+            <label class="photo-pick">
+              📷 사진 선택
+              <input type="file" id="photoFile" accept="image/*" capture="environment">
+            </label>
+            <button class="photo-clear" id="photoClear" type="button" style="display:none">지우기</button>
+          </div>
+          <div class="photo-state" id="photoState"></div>
+          <input type="hidden" id="fImg">
         </div>
         <div class="fld">
           <label>PX가 기준 용량</label>
@@ -258,6 +285,9 @@ function render(){
   $("skip").onclick   = () => { QUEUE.shift(); render(); };
   $("save").onclick   = save;
   $("btnFind").onclick = () => find($("q").value);
+  $("photoFile").onchange = e => uploadPhoto(e.target.files[0]);
+  $("photoClear").onclick = clearPhoto;
+  syncPhotoPreview();
   $("q").onkeydown    = e => { if(e.key === "Enter") find($("q").value); };
   $("ref").onkeydown  = e => { if(e.key === "Enter") save(); };
 
@@ -311,9 +341,56 @@ function pick(i){
   if(!h) return;
   picked = i;
   $("ref").value = h.price;
-  if(h.image) $("fImg").value = h.image;
+  if(h.image){ $("fImg").value = h.image; syncPhotoPreview(); }
   $("hits").querySelectorAll("[data-i]").forEach(b =>
     b.setAttribute("aria-pressed", Number(b.dataset.i) === i));
+}
+
+/* ═══ 사진 : 골라서 Supabase Storage에 올리기 ═══════════════ */
+function syncPhotoPreview(){
+  const url = $("fImg").value.trim();
+  $("photoPrev").src = url || "";
+  $("photoPrev").style.visibility = url ? "visible" : "hidden";
+  $("photoClear").style.display = url ? "" : "none";
+}
+
+function clearPhoto(){
+  $("fImg").value = "";
+  $("photoFile").value = "";
+  $("photoState").textContent = "";
+  $("photoState").className = "photo-state";
+  syncPhotoPreview();
+}
+
+async function uploadPhoto(file){
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024){
+    $("photoState").textContent = "5MB보다 작은 사진으로 골라주세요";
+    $("photoState").className = "photo-state err";
+    return;
+  }
+
+  $("photoState").textContent = "올리는 중…";
+  $("photoState").className = "photo-state";
+
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error } = await sb.storage.from("product-images").upload(path, file, {
+    cacheControl: "31536000", upsert: false,
+  });
+
+  if(error){
+    $("photoState").textContent = "올리지 못했습니다: " + error.message;
+    $("photoState").className = "photo-state err";
+    return;
+  }
+
+  const { data } = sb.storage.from("product-images").getPublicUrl(path);
+  $("fImg").value = data.publicUrl;
+  syncPhotoPreview();
+  $("photoState").textContent = "올렸습니다";
+  $("photoState").className = "photo-state ok";
 }
 
 /* ═══ 저장 ═══════════════════════════════════════════════ */
