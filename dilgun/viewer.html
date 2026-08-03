@@ -2,115 +2,307 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#EDE1C7">
+<meta name="theme-color" content="#F7F4EC">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>딜군</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
-  --ink:#4E6144; --deep:#2E3B28;
-  --rule:#E2DCCF; --wash:#F7F4EC; --paper:#fff;
-  --win:#2F7D4F; --win-bg:#E7F3EA;
-  --lose:#B4432A; --lose-bg:#FBEEE8;
-  --hold:#8A6A20; --hold-bg:#FBF2DC;
-  --dim:#6E7166; --faint:#9C9E8F;
+  --olive:#4E6144; --deep:#2E3B28; --band:#33422C;
+  --gold:#D2A55C; --gold-dk:#A67C3A;
+  --sand:#EDE1C7; --wash:#F7F4EC; --paper:#fff;
+  --rule:#E2DCCF; --track:#EFEADF;
+  --ink:#1F241C; --dim:#6E7166; --faint:#9C9E8F;
+
+  --win:#2F7D4F;  --win-bg:#E7F3EA;  --win-soft:#BFDFC9;
+  --same:#8A6A20; --same-bg:#FBF2DC;
+  --lose:#B4432A; --lose-bg:#FBEEE8; --lose-soft:#EFC7B8;
+
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+
+  --tabh:58px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--sans);background:var(--wash);color:#1F241C;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:40px}
-.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);background:var(--wash);color:var(--ink);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding-bottom:calc(var(--tabh) + env(safe-area-inset-bottom));
+}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
 
-/* 헤더 */
-.hero{background:var(--deep);color:#fff;padding:22px 18px 18px}
-.hero h1{font-size:19px;font-weight:800;letter-spacing:-.3px}
-.hero p{color:#AEB59D;font-size:12.5px;margin-top:4px}
+/* ─── 상단 : 검색 + 분류 ─────────────────────────── */
+.top{position:sticky;top:0;z-index:30;background:var(--wash);padding:12px 14px 0}
 
-/* 검색/필터 */
-.filters{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--rule);padding:10px 14px}
-.search{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;font-size:14px;background:var(--wash)}
-.search:focus{outline:none;border-color:var(--ink)}
-.chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.brand-bar{display:flex;align-items:center;gap:8px;padding-bottom:10px}
+.brand-mark{width:26px;height:26px;border-radius:7px;flex:0 0 auto}
+.brand-name{font-size:15.5px;font-weight:800;letter-spacing:-.3px;color:var(--deep)}
+.brand-sub{font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+.share-btn{
+  margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--rule);
+  background:var(--paper);display:grid;place-items:center;flex:0 0 auto;
+}
+.share-btn svg{width:16px;height:16px;stroke:var(--dim);fill:var(--dim);stroke-width:0}
+
+.install-bar{
+  display:flex;align-items:center;gap:10px;background:var(--deep);color:#fff;
+  border-radius:12px;padding:11px 12px;margin-bottom:10px;font-size:12.5px;font-weight:600;
+}
+.install-bar span{flex:1;line-height:1.4}
+.install-bar button{border:none;border-radius:8px;font-weight:700;font-family:inherit;cursor:pointer}
+#installGo{background:var(--gold);color:var(--deep);padding:8px 13px;font-size:12.5px;flex:0 0 auto}
+#installClose{background:none;color:#CFC9B8;font-size:15px;padding:2px 4px;flex:0 0 auto}
+.search-wrap{position:relative}
+.search{
+  width:100%;padding:12px 14px 12px 40px;border:1px solid var(--rule);
+  border-radius:12px;font-size:14.5px;background:var(--paper);color:var(--ink);
+}
+.search::placeholder{color:var(--faint)}
+.search:focus{outline:none;border-color:var(--olive)}
+.search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none}
+
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 10px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;padding:6px 13px;border-radius:99px;border:1px solid var(--rule);background:#fff;font-size:12.5px;font-weight:600;color:var(--dim);white-space:nowrap}
-.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip{
+  flex:0 0 auto;padding:7px 15px;border-radius:99px;border:1px solid var(--rule);
+  background:var(--paper);font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap;
+}
+.chip[aria-pressed="true"]{background:var(--deep);border-color:var(--deep);color:#fff}
 
-/* 정렬 */
-.sortbar{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:12px;color:var(--dim)}
-.sortbar select{margin-left:auto;padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:#fff;font-size:12.5px}
+/* ─── 섹션 안내줄 ────────────────────────────────── */
+.lede{padding:2px 16px 10px;font-size:12.5px;color:var(--dim)}
+.lede b{color:var(--ink);font-weight:700}
 
-/* 카드 그리드 */
-.grid{padding:4px 14px 20px;display:grid;grid-template-columns:1fr;gap:10px}
-@media (min-width:520px){ .grid{grid-template-columns:1fr 1fr} }
+/* ─── 판정 카드 ──────────────────────────────────── */
+.list{padding:0 14px 18px;display:flex;flex-direction:column;gap:11px}
 
-.card{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px;position:relative;overflow:hidden}
-.card.pick{border-color:#D2A55C}
-.card-top{display:flex;align-items:flex-start;gap:10px}
-.card-emoji{font-size:26px;line-height:1}
-.card-name{font-weight:700;font-size:14.5px;letter-spacing:-.2px}
-.card-cat{color:var(--faint);font-size:11.5px;margin-top:1px}
-.card-badges{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
-.badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;white-space:nowrap}
-.b-pick{background:#FBF2DC;color:#8A6A20}
-.b-new{background:#F0E9D8;color:var(--ink)}
-.b-promo{background:var(--lose-bg);color:var(--lose)}
+.card{
+  position:relative;background:var(--paper);border:1px solid var(--rule);
+  border-radius:14px;padding:14px 14px 12px 17px;overflow:hidden;
+}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--faint)}
+.card.v-win::before,.card.v-win2::before{background:var(--win)}
+.card.v-same::before{background:var(--same)}
+.card.v-lose::before{background:var(--lose)}
 
-.card-note{font-size:12px;color:var(--hold);background:var(--hold-bg);border-radius:6px;padding:6px 9px;margin-top:9px;line-height:1.5}
+.hd{display:flex;align-items:flex-start;gap:11px}
+.tile{
+  flex:0 0 auto;width:44px;height:44px;border-radius:11px;background:var(--wash);
+  display:grid;place-items:center;font-size:21px;line-height:1;
+  position:relative;overflow:hidden;
+}
+.tile img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  background:var(--paper);
+}
+.hd-txt{flex:1;min-width:0;padding-top:1px}
+.name{font-size:15.5px;font-weight:800;letter-spacing:-.3px;line-height:1.3}
+.sub{font-size:12px;color:var(--faint);margin-top:2px}
 
-.prices{display:flex;align-items:baseline;gap:10px;margin-top:11px}
-.p-mart{font-size:20px;font-weight:800;font-family:var(--mono)}
-.p-ref{font-size:12.5px;color:var(--faint);text-decoration:line-through;font-family:var(--mono)}
-.verdict{margin-left:auto;font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px}
-.v-win{background:var(--win-bg);color:var(--win)}
-.v-lose{background:var(--lose-bg);color:var(--lose)}
-.v-same{background:#F2F0E8;color:var(--dim)}
-.v-unknown{background:#F2F0E8;color:var(--faint)}
+.mark{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;
+  font-size:11.5px;font-weight:800;padding:5px 9px;border-radius:8px;white-space:nowrap;
+}
+.m-win2,.m-win{background:var(--win-bg);color:var(--win)}
+.m-same{background:var(--same-bg);color:var(--same)}
+.m-lose{background:var(--lose-bg);color:var(--lose)}
+.m-unknown{background:#F1EFE7;color:var(--faint)}
 
-.card-foot{margin-top:8px;font-size:11px;color:var(--faint)}
+/* 막대 비교 — 이 화면의 핵심 */
+.bars{margin-top:13px;display:grid;grid-template-columns:34px 1fr auto;gap:7px 9px;align-items:center}
+.bar-lb{font-size:11.5px;font-weight:700;color:var(--dim)}
+.bar-tr{height:9px;border-radius:99px;background:var(--track);overflow:hidden;display:flex}
+.bar-fill{height:100%}
+.f-px{background:var(--deep)}
+.f-ref{background:#CFC9B8}
+.f-gap-win{background:var(--win-soft)}
+.f-gap-lose{background:var(--lose-soft)}
+.bar-vl{font-size:14.5px;font-weight:800;text-align:right;white-space:nowrap}
+.bar-vl.muted{font-weight:600;color:var(--faint);font-size:13.5px}
+.bar-vl .qty{font-size:11px;font-weight:600;color:var(--faint);margin-left:3px}
 
-.empty{padding:60px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.8}
-.empty b{display:block;color:#1F241C;font-size:14px;margin-bottom:4px}
+/* 판정 요약줄 */
+.sum{
+  display:flex;align-items:baseline;gap:8px;margin-top:12px;
+  padding-top:11px;border-top:1px solid var(--rule);
+}
+.gap{font-size:14.5px;font-weight:800}
+.gap.win{color:var(--win)} .gap.lose{color:var(--lose)} .gap.same{color:var(--same)}
+.unit{margin-left:auto;font-size:11.5px;color:var(--faint);white-space:nowrap}
 
-.skel{background:linear-gradient(90deg,#F1EEE4 25%,#F9F6EF 37%,#F1EEE4 63%);background-size:400% 100%;animation:sk 1.4s ease infinite;border-radius:12px;height:118px}
-@keyframes sk{0%{background-position:100% 0}100%{background-position:0 0}}
+.flag{
+  margin-top:10px;font-size:12px;padding:8px 11px;border-radius:9px;
+  background:var(--same-bg);color:var(--same);font-weight:600;
+}
+.note{
+  margin-top:10px;font-size:12.5px;padding:8px 11px;border-radius:9px;
+  background:var(--wash);color:var(--dim);line-height:1.5;
+}
 
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
+.save{
+  position:absolute;right:10px;bottom:10px;width:32px;height:32px;
+  border:none;background:none;font-size:16px;line-height:1;opacity:.3;border-radius:8px;
+}
+.save[aria-pressed="true"]{opacity:1}
+
+.tags{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
+.tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--wash);color:var(--dim)}
+.tag.pick{background:#FAF0DC;color:var(--gold-dk)}
+
+/* ─── 안내/빈 화면 ───────────────────────────────── */
+/* ─── 순위 · 접이식 목록 ─────────────────────────── */
+.rank-hd{display:flex;align-items:baseline;gap:9px;padding:4px 2px 12px;margin-top:2px}
+.rank-hd h2{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.rank-hd .n{margin-left:auto;font-size:12px;color:var(--faint);font-family:var(--mono)}
+.rank-hd.warn h2{color:var(--lose)}
+
+.rank-badge{
+  position:absolute;left:-1px;top:12px;background:var(--deep);color:#fff;
+  font-family:var(--mono);font-size:11px;font-weight:800;
+  padding:3px 8px 3px 10px;border-radius:0 8px 8px 0;letter-spacing:-.02em;
+}
+.rank-badge.top3{background:var(--gold-dk)}
+.card.ranked{padding-top:20px}
+
+.section-gap{height:22px}
+
+.fold-btn{
+  width:100%;padding:12px;border:1px dashed var(--rule);border-radius:12px;
+  background:none;font-size:13px;font-weight:700;color:var(--dim);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.fold-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.3;transition:transform .2s}
+.fold-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+
+.condensed{display:none;flex-direction:column;gap:1px;background:var(--paper);
+           border:1px solid var(--rule);border-radius:12px;overflow:hidden;margin-top:8px}
+.condensed.on{display:flex}
+.crow{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--rule)}
+.crow:last-child{border-bottom:none}
+.crow .em{font-size:16px;flex:0 0 auto}
+.crow .cn{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .cp{font-family:var(--mono);font-size:12.5px;font-weight:800;color:var(--win);flex:0 0 auto}
+
+.unknown-note{
+  margin-top:16px;padding:11px 14px;border-radius:10px;background:var(--wash);
+  font-size:12px;color:var(--faint);text-align:center;
+}
+
+.blank{padding:64px 26px;text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7}
+.blank b{display:block;color:var(--ink);font-size:16px;font-weight:800;margin-bottom:7px}
+
+.skel{height:132px;border-radius:14px;background:linear-gradient(100deg,#F1EEE4 30%,#FAF7F0 45%,#F1EEE4 60%);background-size:300% 100%;animation:sk 1.3s linear infinite}
+@keyframes sk{from{background-position:200% 0}to{background-position:-100% 0}}
+
+/* ─── 정적 패널 (후원 · 설정) ────────────────────── */
+.panel{padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.block{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:16px}
+.block h2{font-size:14.5px;font-weight:800;margin-bottom:8px;letter-spacing:-.2px}
+.block p{font-size:13px;color:var(--dim);line-height:1.65}
+.block p + p{margin-top:8px}
+
+.pledge{background:var(--deep);border-color:var(--deep);color:#fff}
+.pledge h2{color:#fff}
+.pledge p{color:#CFC9B8}
+.pledge .stamp{
+  display:inline-block;margin-bottom:10px;font-size:11.5px;font-weight:800;
+  color:var(--gold);border:1px solid var(--gold-dk);border-radius:7px;padding:5px 10px;
+}
+
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--rule)}
+.row:first-of-type{border-top:none;padding-top:2px}
+.row .k{font-size:13px;font-weight:600}
+.row .v{margin-left:auto;font-size:13px;color:var(--dim)}
+.seg{display:flex;gap:5px;margin-left:auto}
+.seg button{
+  padding:6px 12px;border-radius:8px;border:1px solid var(--rule);
+  background:var(--paper);font-size:12.5px;font-weight:700;color:var(--dim);
+}
+.seg button[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:#fff}
+
+/* ─── 하단 탭 ────────────────────────────────────── */
+.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);
+  background:var(--paper);border-top:1px solid var(--rule);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tab{
+  border:none;background:none;padding:8px 0 9px;display:flex;flex-direction:column;
+  align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--faint);
+}
+.tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--olive)}
+
+@media (min-width:600px){
+  .list{max-width:560px;margin:0 auto}
+  .top,.lede,.panel{max-width:560px;margin-left:auto;margin-right:auto}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
 
-<div class="hero">
-  <h1>군마트 가격 비교</h1>
-  <p id="heroSub">시중가와 비교해서 더 싼 상품만 골라 보여드립니다</p>
-</div>
+<header class="top" id="top">
+  <div class="brand-bar">
+    <img class="brand-mark" src="icon.svg" alt="">
+    <span class="brand-name">딜군</span>
+    <span class="brand-sub" id="brandSub"></span>
+    <button class="share-btn" id="shareBtn" aria-label="공유">
+      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg>
+    </button>
+  </div>
 
-<div class="filters">
-  <input class="search" id="search" placeholder="상품 검색">
+  <div class="install-bar" id="installBar" hidden>
+    <span id="installTxt">홈 화면에 추가하면 앱처럼 바로 열립니다</span>
+    <button id="installGo">추가하기</button>
+    <button id="installClose" aria-label="닫기">✕</button>
+  </div>
+
+  <div class="search-wrap">
+    <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+    </svg>
+    <input class="search" id="search" placeholder="상품명 검색" autocomplete="off">
+  </div>
   <div class="chips" id="chips"></div>
-</div>
+</header>
 
-<div class="sortbar">
-  <span id="countLabel">0개 상품</span>
-  <select id="sort">
-    <option value="pick">추천순</option>
-    <option value="win">가성비순</option>
-    <option value="new">신상순</option>
-    <option value="name">이름순</option>
-  </select>
-</div>
+<p class="lede" id="lede"></p>
 
-<div class="grid" id="grid">
-  <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
-</div>
+<main id="stage">
+  <div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+</main>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button class="tab" role="tab" data-t="verdict" aria-selected="true">
+    <svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h14M7 8l-3 6h6zM17 8l-3 6h6z"/></svg>판정
+  </button>
+  <button class="tab" role="tab" data-t="search" aria-selected="false">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>검색
+  </button>
+  <button class="tab" role="tab" data-t="saved" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg>저장
+  </button>
+  <button class="tab" role="tab" data-t="pledge" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.3A3.8 3.8 0 0112 8.4a3.8 3.8 0 017 2.3c0 4.9-7 9.3-7 9.3z"/></svg>후원
+  </button>
+  <button class="tab" role="tab" data-t="settings" aria-selected="false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6"/></svg>설정
+  </button>
+</nav>
 
 <script type="module">
-/* 본인 프로젝트 값으로 교체 (admin.html과 동일) */
-const SUPABASE_URL = "https://zxbiwyjlnkiyglbxxsof.supabase.co/rest/v1/";
-const SUPABASE_ANON_KEY = "sb_publishable_BtUydzGa1D7zX-dYpaQ_7Q_aRusBj56";
+/* ═══ 프로젝트 설정 ═══════════════════════════════════════ */
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const $ = id => document.getElementById(id);
@@ -119,96 +311,435 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const TODAY = new Date().toISOString().slice(0, 10);
 const daysSince = d => d ? Math.floor((new Date(TODAY) - new Date(d)) / 864e5) : 999;
 
-let ITEMS = [];
-let cat = "전체";
-let sort = "pick";
-let q = "";
+/* ═══ 저장·설정은 이 기기에만 남습니다 ═════════════════════ */
+const store = {
+  get(k, dflt){ try{ const v = localStorage.getItem(k); return v == null ? dflt : JSON.parse(v); }catch{ return dflt; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+let SAVED  = new Set(store.get("dilgun.saved", []));
+let THRESH = store.get("dilgun.thresh", 5);
 
-function verdict(it){
-  const mu = (it.q && it.mart != null) ? it.mart / it.q : null;
-  const ru = (it.rq && it.ref != null) ? it.ref / it.rq : null;
-  if(mu == null || ru == null || it.ru !== it.u) return { v:"unknown", pct:null };
-  const pct = ((mu - ru) / ru) * 100;
-  return { v: pct <= -5 ? "win" : pct >= 5 ? "lose" : "same", pct };
+let ITEMS = [], TAB = "verdict", cat = "전체", term = "";
+
+/* ═══ 판정 ═══════════════════════════════════════════════
+   단가(g·ml·개당)가 판정의 유일한 기준입니다.
+   단위를 알 수 없을 때만 총액으로 물러섭니다.            */
+function judge(it){
+  const q = Number(it.q), rq = Number(it.rq);
+  const mart = it.mart == null ? null : Number(it.mart);
+  const ref  = it.ref  == null ? null : Number(it.ref);
+
+  const canUnit = q > 0 && rq > 0 && it.u && it.ru && it.u === it.ru;
+  const a = canUnit ? mart / q  : mart;
+  const b = canUnit ? ref  / rq : ref;
+  if(a == null || b == null || !b) return { v:"unknown", basis:null };
+
+  const pct = ((a - b) / b) * 100;
+  const v = pct <= -20 ? "win2" : pct <= -THRESH ? "win"
+          : pct >=  THRESH ? "lose" : "same";
+  return { v, pct, a, b, basis: canUnit ? "unit" : "total" };
 }
-const V_LABEL = { win:"이득", lose:"주의", same:"비슷", unknown:"정보 없음" };
 
+const LABEL = { win2:"확실히 이득", win:"이득", same:"비슷", lose:"주의", unknown:"판정 불가" };
+const ICON  = { win2:"✅", win:"✅", same:"➖", lose:"⚠️", unknown:"·" };
+
+const fmtUnit = n => n >= 100 ? won(Math.round(n)) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
 const isNew   = it => it.added ? daysSince(it.added) <= 30 : false;
-const promoOn = it => !!(it.promo_ends && daysSince(it.promo_ends) <= 0);
+const onPromo = it => !!(it.promo_ends && daysSince(it.promo_ends) <= 0);
 
+/* ═══ 불러오기 ═══════════════════════════════════════════ */
 async function load(){
   const { data, error } = await sb.from("products")
     .select("*").eq("hidden", false).order("name");
   if(error){
-    $("grid").innerHTML = `<div class="empty"><b>불러오지 못했습니다</b>${esc(error.message)}</div>`;
+    $("stage").innerHTML = `<div class="blank"><b>목록을 불러오지 못했습니다</b>
+      ${esc(error.message)}<br>잠시 후 새로고침해 주세요.</div>`;
     return;
   }
   ITEMS = data;
+  $("brandSub").textContent = `상품 ${won(ITEMS.length)}개`;
   buildChips();
   render();
 }
 
 function buildChips(){
-  const cats = ["전체", ...new Set(ITEMS.map(it => it.cat))];
+  const cats = ["전체", ...new Set(ITEMS.map(i => i.cat).filter(Boolean))];
   $("chips").innerHTML = cats.map(c =>
     `<button class="chip" data-c="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join("");
-  $("chips").querySelectorAll("[data-c]").forEach(b => {
-    b.onclick = () => { cat = b.dataset.c; render(); };
-  });
+  $("chips").querySelectorAll("[data-c]").forEach(b =>
+    b.onclick = () => { cat = b.dataset.c; render(); });
 }
 
+/* ═══ 카드 ═══════════════════════════════════════════════ */
+function card(it, rank){
+  const j = judge(it);
+  const known = j.v !== "unknown";
+  const badge = rank ? `<span class="rank-badge${rank <= 3 ? " top3" : ""}">${rank}위</span>` : "";
+
+  /* 용량이 서로 다를 수 있으니 각 가격 옆에 얼마어치인지 붙입니다 */
+  const qty = (n, u) => (n && u) ? `<span class="qty">/${esc(n)}${esc(u)}</span>` : "";
+
+  /* 막대 : 두 단가를 같은 눈금에 올리고, 차이나는 구간만 색으로 채웁니다 */
+  let bars;
+  if(known){
+    const max = Math.max(j.a, j.b);
+    const pw = j.a / max * 100, rw = j.b / max * 100;
+    const same = Math.min(pw, rw).toFixed(1);
+    const cheaper = j.a <= j.b;
+    const gapCls  = cheaper ? "f-gap-win" : "f-gap-lose";
+    bars = `
+      <div class="bar-lb">PX</div>
+      <div class="bar-tr">
+        <div class="bar-fill f-px" style="width:${same}%"></div>
+        ${!cheaper ? `<div class="bar-fill ${gapCls}" style="width:${(pw - rw).toFixed(1)}%"></div>` : ""}
+      </div>
+      <div class="bar-vl num">${won(it.mart)}원${qty(it.q, it.u)}</div>
+
+      <div class="bar-lb">시중</div>
+      <div class="bar-tr">
+        <div class="bar-fill f-ref" style="width:${same}%"></div>
+        ${cheaper ? `<div class="bar-fill ${gapCls}" style="width:${(rw - pw).toFixed(1)}%"></div>` : ""}
+      </div>
+      <div class="bar-vl num muted">${won(it.ref)}원${qty(it.rq, it.ru)}</div>`;
+  } else {
+    bars = `
+      <div class="bar-lb">PX</div>
+      <div class="bar-tr"><div class="bar-fill f-px" style="width:100%"></div></div>
+      <div class="bar-vl num">${won(it.mart)}원${qty(it.q, it.u)}</div>`;
+  }
+
+  /* 요약 : 얼마 차이인지 + 무엇을 기준으로 판정했는지 */
+  let sum;
+  if(known){
+    /* 용량이 다르면 총액 차이는 오해를 부릅니다.
+       PX와 같은 양을 시중에서 살 때의 값으로 맞춰 비교합니다. */
+    const sameQty = j.basis === "unit" && Number(it.q) !== Number(it.rq);
+    const refAtPxQty = j.basis === "unit" ? j.b * Number(it.q) : Number(it.ref);
+    const diff = Math.round(Math.abs(Number(it.mart) - refAtPxQty));
+    const side = j.pct < 0 ? "저렴" : j.pct > 0 ? "비쌈" : "동일";
+    const tone = j.v === "lose" ? "lose" : j.v === "same" ? "same" : "win";
+    const unitTxt = j.basis === "unit"
+      ? `${esc(it.u)}당 ${fmtUnit(j.a)} vs ${fmtUnit(j.b)}원`
+      : "총액 기준 · 용량 미확인";
+    sum = `<div class="sum">
+      <span class="gap ${tone} num">${sameQty ? "같은 양이면 " : ""}${won(diff)}원 ${side}${j.pct ? ` · ${Math.abs(j.pct).toFixed(0)}%` : ""}</span>
+      <span class="unit">${unitTxt}</span>
+    </div>`;
+  } else {
+    sum = `<div class="sum"><span class="unit" style="margin:0">시중가가 아직 없어 비교하지 못합니다</span></div>`;
+  }
+
+  const tags = [
+    it.pick ? `<span class="tag pick">⭐ 추천</span>` : "",
+    isNew(it) ? `<span class="tag">신상</span>` : "",
+    it.ref_date ? `<span class="tag">시중가 ${esc(it.ref_date)}</span>` : ""
+  ].filter(Boolean).join("");
+
+  return `<article class="card v-${j.v}${rank ? " ranked" : ""}">
+    ${badge}
+    <div class="hd">
+      <div class="tile">${it.emoji || "📦"}${
+        it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" onerror="this.remove()">` : ""
+      }</div>
+      <div class="hd-txt">
+        <div class="name">${esc(it.name)}</div>
+        <div class="sub">${esc(it.cat) || "미분류"}</div>
+      </div>
+      <span class="mark m-${j.v}">${ICON[j.v]} ${LABEL[j.v]}</span>
+    </div>
+    <div class="bars">${bars}</div>
+    ${sum}
+    ${onPromo(it) ? `<div class="flag">행사가로 등록된 상품입니다</div>` : ""}
+    ${it.pick && it.pick_note ? `<div class="note">${esc(it.pick_note)}</div>` : ""}
+    ${tags ? `<div class="tags">${tags}</div>` : ""}
+    <button class="save" data-id="${esc(it.id)}" aria-pressed="${SAVED.has(it.id)}"
+            aria-label="저장">${SAVED.has(it.id) ? "❤️" : "🤍"}</button>
+  </article>`;
+}
+
+/* ═══ 화면 ═══════════════════════════════════════════════ */
 function render(){
-  $("chips").querySelectorAll("[data-c]").forEach(b => {
-    b.setAttribute("aria-pressed", b.dataset.c === cat);
-  });
+  const showList = TAB === "verdict" || TAB === "search" || TAB === "saved";
+  $("top").style.display  = showList ? "" : "none";
+  $("lede").style.display = showList ? "" : "none";
 
-  let list = ITEMS.filter(it => cat === "전체" || it.cat === cat);
-  if(q.trim()) list = list.filter(it => it.name.toLowerCase().includes(q.trim().toLowerCase()));
+  $("chips").querySelectorAll("[data-c]").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.c === cat));
+  $("tabs").querySelectorAll("[data-t]").forEach(b =>
+    b.setAttribute("aria-selected", b.dataset.t === TAB));
 
-  list = list.map(it => ({ it, v: verdict(it) }));
+  if(TAB === "pledge")   return renderPledge();
+  if(TAB === "settings") return renderSettings();
 
-  const rank = { win:0, same:1, unknown:2, lose:3 };
-  if(sort === "pick")     list.sort((a,b) => (b.it.pick - a.it.pick) || rank[a.v.v]-rank[b.v.v]);
-  else if(sort === "win") list.sort((a,b) => (a.v.pct ?? 999) - (b.v.pct ?? 999));
-  else if(sort === "new") list.sort((a,b) => daysSince(a.it.added) - daysSince(b.it.added));
-  else                    list.sort((a,b) => a.it.name.localeCompare(b.it.name, "ko"));
+  let list = ITEMS
+    .filter(it => cat === "전체" || it.cat === cat)
+    .filter(it => !term || it.name.toLowerCase().includes(term));
 
-  $("countLabel").textContent = `${list.length}개 상품`;
+  if(TAB === "saved") list = list.filter(it => SAVED.has(it.id));
 
-  if(!list.length){
-    $("grid").innerHTML = `<div class="empty"><b>해당하는 상품이 없습니다</b>다른 분류나 검색어로 시도해 보세요.</div>`;
+  const scored = list.map(it => ({ it, j: judge(it) }));
+
+  if(TAB === "verdict") return renderVerdict(scored);
+
+  /* 검색 · 저장 : 이름순 그대로 나열 */
+  scored.sort((x, y) => x.it.name.localeCompare(y.it.name, "ko"));
+
+  $("lede").innerHTML = TAB === "saved"
+    ? `저장한 상품 <b>${won(scored.length)}개</b>`
+    : `검색 결과 <b>${won(scored.length)}개</b>`;
+
+  if(!scored.length){
+    $("stage").innerHTML = `<div class="blank">${
+      TAB === "saved"
+        ? `<b>저장한 상품이 없습니다</b>카드 오른쪽 아래 하트를 누르면 여기 모입니다.`
+        : term
+          ? `<b>“${esc(term)}”에 맞는 상품이 없습니다</b>다른 이름으로 찾아보세요.`
+          : `<b>아직 등록된 상품이 없습니다</b>관리자 화면에서 상품과 시중가를 넣어주세요.`
+    }</div>`;
     return;
   }
 
-  $("grid").innerHTML = list.map(({ it, v }) => {
-    const badges = [
-      it.pick ? `<span class="badge b-pick">⭐ 추천</span>` : "",
-      isNew(it) ? `<span class="badge b-new">🆕 신상</span>` : "",
-      promoOn(it) ? `<span class="badge b-promo">🎉 행사</span>` : "",
-    ].filter(Boolean).join("");
-
-    return `<div class="card ${it.pick ? "pick" : ""}">
-      <div class="card-top">
-        <div class="card-emoji">${it.emoji || "📦"}</div>
-        <div>
-          <div class="card-name">${esc(it.name)}</div>
-          <div class="card-cat">${esc(it.cat)}</div>
-        </div>
-        <div class="card-badges">${badges}</div>
-      </div>
-      ${it.pick && it.pick_note ? `<div class="card-note">${esc(it.pick_note)}</div>` : ""}
-      <div class="prices">
-        <span class="p-mart">${won(it.mart)}원</span>
-        ${it.ref != null ? `<span class="p-ref">${won(it.ref)}원</span>` : ""}
-        <span class="verdict v-${v.v}">${V_LABEL[v.v]}${v.pct != null ? ` ${v.pct > 0 ? "+" : ""}${v.pct.toFixed(0)}%` : ""}</span>
-      </div>
-      <div class="card-foot">${it.ref_date ? `시중가 확인 ${it.ref_date}` : "시중가 정보 없음"}</div>
-    </div>`;
-  }).join("");
+  $("stage").innerHTML = `<div class="list">${scored.map(s => card(s.it)).join("")}</div>`;
+  bindCardEvents();
 }
 
-$("search").addEventListener("input", e => { q = e.target.value; render(); });
-$("sort").addEventListener("change", e => { sort = e.target.value; render(); });
+/* ═══ 판정 탭 : "싼가?"가 아니라 "뭐가 제일 이득인가?" ═════
+   전부 초록불이면 배지 자체가 정보가 아닙니다.
+   그래서 여기서는 순서와 예외를 정보로 씁니다.          */
+function renderVerdict(scored){
+  const known  = scored.filter(s => s.j.v !== "unknown");
+  const unknown = scored.length - known.length;
+
+  known.sort((x, y) => (x.j.pct ?? 0) - (y.j.pct ?? 0)); // 가장 싼(음수 큰) 순
+
+  const warn = known.filter(s => s.j.v === "lose" || s.j.v === "same");
+  const wins = known.filter(s => s.j.v === "win" || s.j.v === "win2");
+  const TOP  = 10;
+  const top  = wins.slice(0, TOP);
+  const rest = wins.slice(TOP);
+
+  $("lede").innerHTML = wins.length
+    ? `단가 기준 이득률 순위입니다 · <b>${won(known.length)}개</b> 비교됨`
+    : `아직 비교할 수 있는 상품이 없습니다`;
+
+  if(!known.length && !unknown){
+    $("stage").innerHTML = `<div class="blank"><b>아직 등록된 상품이 없습니다</b>관리자 화면에서 상품과 시중가를 넣어주세요.</div>`;
+    return;
+  }
+
+  let html = "";
+
+  if(top.length){
+    html += `<div class="rank-hd"><h2>지금 가장 이득</h2><span class="n">TOP ${top.length}</span></div>`;
+    html += `<div class="list">${top.map((s, i) => card(s.it, i + 1)).join("")}</div>`;
+  }
+
+  if(warn.length){
+    html += `<div class="section-gap"></div>
+      <div class="rank-hd warn"><h2>시중과 비슷하거나 더 비쌉니다</h2><span class="n">${warn.length}개</span></div>
+      <div class="list">${warn.map(s => card(s.it)).join("")}</div>`;
+  }
+
+  if(rest.length){
+    html += `<div class="section-gap"></div>
+      <button class="fold-btn" id="foldRest" aria-expanded="false">
+        나머지 이득 상품 ${won(rest.length)}개 더보기
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="condensed" id="restList">
+        ${rest.map(s => `<div class="crow">
+          <span class="em">${s.it.emoji || "📦"}</span>
+          <span class="cn">${esc(s.it.name)}</span>
+          <span class="cp num">${Math.abs(s.j.pct).toFixed(0)}% 저렴</span>
+        </div>`).join("")}
+      </div>`;
+  }
+
+  if(unknown){
+    html += `<div class="unknown-note">시중가 확인 전 상품 ${won(unknown)}개는 판정에서 빠졌습니다</div>`;
+  }
+
+  if(!html){
+    html = `<div class="blank"><b>표시할 상품이 없습니다</b>다른 분류나 검색어로 시도해 보세요.</div>`;
+  }
+
+  $("stage").innerHTML = html;
+  bindCardEvents();
+
+  const foldBtn = $("foldRest");
+  if(foldBtn){
+    foldBtn.onclick = () => {
+      const open = foldBtn.getAttribute("aria-expanded") === "true";
+      foldBtn.setAttribute("aria-expanded", String(!open));
+      $("restList").classList.toggle("on", !open);
+    };
+  }
+}
+
+function bindCardEvents(){
+  $("stage").querySelectorAll(".save").forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    if(SAVED.has(id)) SAVED.delete(id); else SAVED.add(id);
+    store.set("dilgun.saved", [...SAVED]);
+    b.setAttribute("aria-pressed", SAVED.has(id));
+    b.textContent = SAVED.has(id) ? "❤️" : "🤍";
+    if(TAB === "saved") render();
+  });
+}
+
+function renderPledge(){
+  $("stage").innerHTML = `<div class="panel">
+    <div class="block pledge">
+      <span class="stamp">협찬 없음 · 판정은 팔지 않습니다</span>
+      <h2>돈 받고 순위를 바꾸지 않습니다</h2>
+      <p>딜군의 이득·주의 판정은 오직 단가 계산으로만 나옵니다.
+         어떤 브랜드도 판정을 살 수 없고, 광고로 카드를 위로 올리지 않습니다.</p>
+    </div>
+
+    <div class="block">
+      <h2>수익이 생기면 10분의 1은 돌려보냅니다</h2>
+      <p>이 앱에서 수익이 발생하면 그중 10%를 군 관련 단체에 기부하고,
+         영수증을 이 화면에 그대로 공개합니다.</p>
+      <p>아직 첫 수익 전이라 공개할 내역이 없습니다.
+         생기는 즉시 여기에 날짜와 금액이 올라옵니다.</p>
+    </div>
+
+    <div class="block">
+      <h2>제보가 가장 큰 도움입니다</h2>
+      <p>가격이 바뀌었거나 없는 상품을 발견하면 알려주세요.
+         제보 한 건이 광고 한 건보다 이 앱을 정확하게 만듭니다.</p>
+    </div>
+  </div>`;
+}
+
+function renderSettings(){
+  const withRef = ITEMS.filter(i => i.ref != null).length;
+  const last = ITEMS.map(i => i.ref_date).filter(Boolean).sort().pop();
+
+  $("stage").innerHTML = `<div class="panel">
+    <div class="block">
+      <h2>판정 기준</h2>
+      <p style="margin-bottom:12px">단가가 이 비율보다 싸면 이득, 비싸면 주의로 판정합니다.</p>
+      <div class="row">
+        <span class="k">기준 차이</span>
+        <div class="seg" id="segThresh">
+          ${[3,5,10].map(v => `<button data-v="${v}" aria-pressed="${v === THRESH}">${v}%</button>`).join("")}
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h2>담긴 자료</h2>
+      <div class="row"><span class="k">전체 상품</span><span class="v num">${won(ITEMS.length)}개</span></div>
+      <div class="row"><span class="k">시중가 있는 상품</span><span class="v num">${won(withRef)}개</span></div>
+      <div class="row"><span class="k">가장 최근 시중가</span><span class="v num">${last ? esc(last) : "없음"}</span></div>
+      <div class="row"><span class="k">저장한 상품</span><span class="v num">${won(SAVED.size)}개</span></div>
+    </div>
+
+    <div class="block">
+      <h2>판정 방법</h2>
+      <p>총액이 아니라 <b>단가</b>로 비교합니다. 100g에 5,000원과 200g에 9,000원이면
+         뒤쪽이 총액은 비싸도 단가는 쌉니다.</p>
+      <p>용량 단위가 서로 다르거나 비어 있으면 총액으로 비교하고,
+         카드에 그 사실을 적어둡니다.</p>
+      <p>배송비는 판정에 넣지 않습니다. 사람마다 조건이 달라서입니다.</p>
+    </div>
+
+    <div class="block">
+      <h2>저장 위치</h2>
+      <p>저장한 상품과 판정 기준은 이 기기에만 남습니다.
+         다른 기기에서는 보이지 않고, 브라우저 자료를 지우면 함께 사라집니다.</p>
+    </div>
+  </div>`;
+
+  $("segThresh").querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+    THRESH = Number(b.dataset.v);
+    store.set("dilgun.thresh", THRESH);
+    render();
+  });
+}
+
+/* ═══ 조작 ═══════════════════════════════════════════════ */
+$("search").addEventListener("input", e => {
+  term = e.target.value.trim().toLowerCase();
+  render();
+});
+
+$("tabs").querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
+  TAB = b.dataset.t;
+  window.scrollTo({ top:0 });
+  render();
+  if(TAB === "search") $("search").focus();
+});
+
+/* ═══ 공유 ═══════════════════════════════════════════════ */
+function toast(msg){
+  let el = document.getElementById("toastEl");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "toastEl";
+    el.style.cssText = "position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);"
+      + "background:var(--deep);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;"
+      + "font-weight:600;transition:bottom .25s;z-index:60";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(() => el.style.bottom = "22px");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.style.bottom = "-60px", 1800);
+}
+
+$("shareBtn").onclick = async () => {
+  const url = location.origin + location.pathname;
+  if(navigator.share){
+    try{ await navigator.share({ title: "딜군", text: "PX 가격, 진짜 싼지 딜군에서 확인해보세요", url }); }
+    catch{ /* 취소는 무시 */ }
+  } else {
+    try{ await navigator.clipboard.writeText(url); toast("링크를 복사했습니다"); }
+    catch{ toast(url); }
+  }
+};
+
+/* ═══ 홈 화면에 추가 ═══════════════════════════════════════
+   설치 배너는 이미 앱으로 실행 중이거나, 사용자가 닫은 적 있으면 안 띄웁니다. */
+const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+  || window.navigator.standalone === true;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+let deferredInstall = null;
+
+if(!isStandalone && !store.get("dilgun.installHidden", false)){
+  if(isIOS){
+    $("installTxt").textContent = "공유 버튼을 누르고 “홈 화면에 추가”를 선택하세요";
+    $("installGo").style.display = "none";
+    $("installBar").hidden = false;
+  } else {
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredInstall = e;
+      $("installBar").hidden = false;
+    });
+  }
+}
+
+$("installGo").onclick = async () => {
+  if(!deferredInstall) return;
+  deferredInstall.prompt();
+  await deferredInstall.userChoice;
+  deferredInstall = null;
+  $("installBar").hidden = true;
+};
+
+$("installClose").onclick = () => {
+  $("installBar").hidden = true;
+  store.set("dilgun.installHidden", true);
+};
+
+window.addEventListener("appinstalled", () => { $("installBar").hidden = true; });
+
+/* ═══ 오프라인에서도 아이콘·틀은 뜨도록 ═══════════════════ */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 
 load();
 </script>

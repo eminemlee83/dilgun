@@ -85,6 +85,15 @@ logo-wordmark.png   딜군 글자 1024px (투명 배경)
 logo-sheet.svg      전체 조합 시트
 ```
 
+### 앱처럼 쓰기 위한 파일
+```
+vercel.json    dilgun.vercel.app 루트 주소를 viewer.html로 연결
+sw.js          서비스워커 — 아이콘만 캐시, 가격 정보는 절대 캐시 안 함
+```
+이 두 파일이 있어야 사람들이 `/viewer.html`을 안 붙이고 그냥
+`dilgun.vercel.app`으로 들어와도 화면이 뜨고, 홈 화면에 추가했을 때
+앱처럼 빠르게 열립니다.
+
 ---
 
 ## 붙이는 법

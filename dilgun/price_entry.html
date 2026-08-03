@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E3B28">
+<title>딜군 · 시중가 입력</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --olive:#4E6144; --deep:#2E3B28; --gold:#D2A55C; --gold-dk:#A67C3A;
+  --wash:#F7F4EC; --paper:#fff; --rule:#E2DCCF; --track:#EFEADF;
+  --ink:#1F241C; --dim:#6E7166; --faint:#9C9E8F;
+  --win:#2F7D4F; --lose:#B4432A; --hold:#8A6A20; --hold-bg:#FBF2DC;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--wash);color:var(--ink);font-size:14px;line-height:1.5;
+     -webkit-font-smoothing:antialiased;padding-bottom:40px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
+
+.board{background:var(--deep);color:#fff;padding:16px 18px}
+.board .mark{font-size:15.5px;font-weight:800}
+.board .mark span{color:#AEB59D;font-weight:600;margin-left:5px}
+
+main{max-width:520px;margin:0 auto;padding:14px}
+
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bar-tr{flex:1;height:6px;background:var(--rule);border-radius:99px;overflow:hidden}
+.bar-fl{height:100%;background:var(--olive);border-radius:99px;transition:width .25s}
+.bar-n{font-size:12px;color:var(--dim);white-space:nowrap}
+.bar-n b{color:var(--ink);font-family:var(--mono)}
+
+.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:18px;margin-bottom:12px}
+
+.nm{font-size:18px;font-weight:800;letter-spacing:-.3px;line-height:1.3}
+.br{font-size:12.5px;color:var(--faint);margin-top:3px}
+
+.px{display:flex;align-items:baseline;gap:9px;padding:11px 13px;background:var(--wash);
+    border-radius:10px;margin:14px 0}
+.px .lb{font-size:11.5px;color:var(--dim);font-weight:700}
+.px .vl{font-family:var(--mono);font-size:19px;font-weight:800}
+.px .qt{margin-left:auto;font-size:12px;color:var(--dim)}
+.px .qt.warn{color:var(--hold);font-weight:700}
+
+/* ── 네이버 조회 ─────────────────────────────── */
+.find{border-top:1px solid var(--rule);margin-top:16px;padding-top:15px}
+.find-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.find-hd h2{font-size:13px;font-weight:800}
+.find-hd .hint{margin-left:auto;font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+
+.qbox{display:grid;grid-template-columns:1fr auto;gap:7px;margin-bottom:11px}
+.qbox input{padding:9px 11px;border:1px solid var(--rule);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:0}
+.qbox input:focus{outline:none;border-color:var(--olive)}
+.qbox button{padding:9px 14px;border:1px solid var(--rule);background:var(--paper);
+             border-radius:8px;font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap}
+
+.hits{display:flex;flex-direction:column;gap:6px;max-height:290px;overflow-y:auto}
+
+.photo-row{display:flex;align-items:center;gap:10px}
+.photo-prev{
+  width:54px;height:54px;border-radius:10px;background:var(--wash);
+  border:1px dashed var(--rule);object-fit:cover;flex:0 0 auto;
+  visibility:hidden;
+}
+.photo-pick{
+  flex:1;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;
+  background:var(--paper);font-size:12.5px;font-weight:700;color:var(--dim);
+  display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+  min-width:0;
+}
+.photo-pick input{display:none}
+.photo-state{font-size:11.5px;color:var(--faint);margin-top:6px}
+.photo-state.err{color:var(--lose)}
+.photo-state.ok{color:var(--win)}
+.photo-clear{font-size:11.5px;color:var(--dim);text-decoration:underline;cursor:pointer;flex:0 0 auto;background:none;border:none;padding:0}
+.hit{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--rule);
+     border-radius:10px;background:var(--paper);text-align:left;width:100%}
+.hit[aria-pressed="true"]{border-color:var(--olive);background:#F3F5F0;box-shadow:inset 0 0 0 1px var(--olive)}
+.hit img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--wash);flex:0 0 auto}
+.hit .t{flex:1;min-width:0}
+.hit .t1{font-size:12.5px;font-weight:600;line-height:1.35;
+         display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hit .t2{font-size:11px;color:var(--faint);margin-top:2px}
+.hit .p{font-family:var(--mono);font-size:14px;font-weight:800;white-space:nowrap;flex:0 0 auto}
+
+.state{padding:16px 4px;font-size:12.5px;color:var(--dim);text-align:center}
+.state a{color:var(--olive);font-weight:700}
+
+/* ── 입력 ────────────────────────────────────── */
+.fld{margin-bottom:13px}
+.fld label{font-size:11.5px;color:var(--dim);font-weight:700;display:block;margin-bottom:5px}
+.fld input,.fld select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;
+                       font-size:14px;font-family:inherit}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--olive)}
+.fld.big input{font-family:var(--mono);font-size:21px;font-weight:800;padding:12px 14px}
+.pair{display:grid;grid-template-columns:1fr 88px;gap:8px}
+
+.more{font-size:12.5px;color:var(--olive);font-weight:700;cursor:pointer;
+      display:inline-block;margin:4px 0 13px;user-select:none}
+.detail{display:none}
+.detail.on{display:block}
+
+.btn{border:none;background:var(--olive);color:#fff;font-weight:700;font-size:14.5px;
+     padding:13px 18px;border-radius:9px;width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:var(--paper);color:var(--dim);border:1px solid var(--rule)}
+.acts{display:flex;gap:8px;margin-top:4px}
+.acts .ghost{flex:0 0 100px}
+.acts .go{flex:1}
+
+.blank{padding:56px 20px;text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7}
+.blank b{display:block;color:var(--ink);font-size:17px;font-weight:800;margin-bottom:7px}
+
+.toast{position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);background:var(--deep);
+       color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:600;
+       transition:bottom .25s;z-index:50}
+.toast.on{bottom:22px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="board">
+  <div class="mark">딜군<span>시중가 입력</span></div>
+</div>
+
+<main>
+  <div class="bar">
+    <div class="bar-tr"><div class="bar-fl" id="pfill" style="width:0%"></div></div>
+    <div class="bar-n"><b id="pdone">0</b> / <b id="ptotal">0</b></div>
+  </div>
+  <div id="stage"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = id => document.getElementById(id);
+const won = n => (n ?? 0).toLocaleString("ko-KR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CATS = ["화장품","식품","음료","생활용품","건강","의류","전자","유아동","반려동물","기타"];
+const today = () => new Date().toISOString().slice(0, 10);
+
+/* PX 상품명에는 (영외)·(펫)·[양념갈비 맛] 같은 꼬리표가 붙어 있어
+   그대로 검색하면 결과가 안 나옵니다. 괄호 안을 걷어냅니다. */
+const cleanQuery = s => String(s ?? "")
+  .replace(/\([^)]*\)/g, " ")
+  .replace(/\[[^\]]*\]/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+let QUEUE = [], TOTAL = 0, HITS = [], picked = -1;
+
+function toast(msg){
+  $("toast").textContent = msg;
+  $("toast").classList.add("on");
+  setTimeout(() => $("toast").classList.remove("on"), 1800);
+}
+
+/* ═══ 남은 상품 추리기 ═══════════════════════════════════ */
+async function boot(){
+  const [{ data: cat, error: e1 }, { data: prod, error: e2 }] = await Promise.all([
+    sb.from("catalog_items").select("name,brand,price,category,q,u").order("created_at"),
+    sb.from("products").select("name")
+  ]);
+  if(e1 || e2){
+    $("stage").innerHTML = `<div class="blank"><b>불러오지 못했습니다</b>${esc((e1||e2).message)}</div>`;
+    return;
+  }
+  const key = s => String(s).replace(/\s/g, "").toLowerCase();
+  const done = new Set(prod.map(p => key(p.name)));
+  QUEUE = cat.filter(c => !done.has(key(c.name)));
+  TOTAL = cat.length;
+  $("ptotal").textContent = won(TOTAL);
+  render();
+}
+
+function progress(){
+  const d = TOTAL - QUEUE.length;
+  $("pdone").textContent = won(d);
+  $("pfill").style.width = TOTAL ? `${d / TOTAL * 100}%` : "0%";
+}
+
+/* ═══ 화면 ═══════════════════════════════════════════════ */
+function render(){
+  progress();
+  HITS = []; picked = -1;
+
+  if(!QUEUE.length){
+    $("stage").innerHTML = `<div class="blank"><b>전부 끝났습니다</b>시중가를 넣을 상품이 더 없습니다.</div>`;
+    return;
+  }
+
+  const it = QUEUE[0];
+  const hasQty = it.q && it.u;
+  const catOk = CATS.includes(it.category);
+  const q0 = cleanQuery(it.name);
+
+  $("stage").innerHTML = `
+    <div class="sheet">
+      <div class="nm">${esc(it.name)}</div>
+      <div class="br">${esc(it.brand) || "브랜드 정보 없음"}</div>
+
+      <div class="px">
+        <span class="lb">PX가</span>
+        <span class="vl">${won(it.price)}원</span>
+        <span class="qt ${hasQty ? "" : "warn"}">${hasQty ? esc(it.q) + esc(it.u) : "용량 미확인"}</span>
+      </div>
+
+      <div class="find">
+        <div class="find-hd">
+          <h2>네이버쇼핑에서 찾기</h2>
+          <span class="hint" id="hint"></span>
+        </div>
+        <div class="qbox">
+          <input id="q" value="${esc(q0)}" placeholder="검색어">
+          <button id="btnFind">다시 찾기</button>
+        </div>
+        <div class="hits" id="hits"></div>
+        <div class="state" id="state">찾는 중…</div>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="fld big">
+        <label>시중가</label>
+        <input type="number" id="ref" inputmode="numeric" placeholder="위에서 고르거나 직접 입력">
+      </div>
+
+      <span class="more" id="more">용량 · 카테고리 · 사진 ${hasQty && catOk ? "" : "⚠️"}</span>
+
+      <div class="detail ${hasQty && catOk ? "" : "on"}" id="detail">
+        <div class="fld">
+          <label>카테고리</label>
+          <select id="fCat">${CATS.map(c => `<option ${c === it.category ? "selected" : ""}>${c}</option>`).join("")}</select>
+        </div>
+        <div class="fld">
+          <label>제품 사진</label>
+          <div class="photo-row">
+            <img class="photo-prev" id="photoPrev" alt="">
+            <label class="photo-pick">
+              📷 사진 선택
+              <input type="file" id="photoFile" accept="image/*" capture="environment">
+            </label>
+            <button class="photo-clear" id="photoClear" type="button" style="display:none">지우기</button>
+          </div>
+          <div class="photo-state" id="photoState"></div>
+          <input type="hidden" id="fImg">
+        </div>
+        <div class="fld">
+          <label>PX가 기준 용량</label>
+          <div class="pair">
+            <input type="number" id="fQ" step="any" value="${it.q ?? ""}" placeholder="수량">
+            <input type="text" id="fU" value="${it.u ?? ""}" placeholder="g / ml / 개">
+          </div>
+        </div>
+        <div class="fld">
+          <label>시중가 기준 용량 (다르면 수정)</label>
+          <div class="pair">
+            <input type="number" id="fRQ" step="any" value="${it.q ?? ""}" placeholder="수량">
+            <input type="text" id="fRU" value="${it.u ?? ""}" placeholder="g / ml / 개">
+          </div>
+        </div>
+      </div>
+
+      <div class="acts">
+        <button class="btn ghost" id="skip">건너뛰기</button>
+        <button class="btn go" id="save">등록하고 다음</button>
+      </div>
+    </div>`;
+
+  $("more").onclick   = () => $("detail").classList.toggle("on");
+  $("skip").onclick   = () => { QUEUE.shift(); render(); };
+  $("save").onclick   = save;
+  $("btnFind").onclick = () => find($("q").value);
+  $("photoFile").onchange = e => uploadPhoto(e.target.files[0]);
+  $("photoClear").onclick = clearPhoto;
+  syncPhotoPreview();
+  $("q").onkeydown    = e => { if(e.key === "Enter") find($("q").value); };
+  $("ref").onkeydown  = e => { if(e.key === "Enter") save(); };
+
+  find(q0);
+}
+
+/* ═══ 네이버 조회 ════════════════════════════════════════ */
+async function find(query){
+  const term = String(query ?? "").trim();
+  $("hits").innerHTML = "";
+  $("hint").textContent = "";
+  if(!term){ $("state").textContent = "검색어를 넣어주세요."; return; }
+
+  $("state").textContent = "찾는 중…";
+
+  const { data, error } = await sb.functions.invoke("naver-price", { body: { query: term, display: 10 } });
+
+  const naverLink = `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(term)}`;
+
+  if(error || data?.error){
+    $("state").innerHTML = `조회하지 못했습니다 · ${esc(data?.error || error.message)}<br>
+      <a href="${naverLink}" target="_blank" rel="noopener">네이버에서 직접 보기</a>`;
+    return;
+  }
+
+  HITS = data.items ?? [];
+  if(!HITS.length){
+    $("state").innerHTML = `결과가 없습니다. 검색어를 줄여보세요.<br>
+      <a href="${naverLink}" target="_blank" rel="noopener">네이버에서 직접 보기</a>`;
+    return;
+  }
+
+  $("hint").textContent = `최저 ${won(data.lowest)} · 중앙 ${won(data.median)}원`;
+  $("state").innerHTML = `<a href="${naverLink}" target="_blank" rel="noopener">네이버에서 더 보기</a>`;
+
+  $("hits").innerHTML = HITS.map((h, i) => `
+    <button class="hit" data-i="${i}" aria-pressed="false">
+      ${h.image ? `<img src="${esc(h.image)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : `<img alt="">`}
+      <span class="t">
+        <span class="t1">${esc(h.title)}</span>
+        <span class="t2">${esc(h.mall)}${h.brand ? " · " + esc(h.brand) : ""}</span>
+      </span>
+      <span class="p">${won(h.price)}원</span>
+    </button>`).join("");
+
+  $("hits").querySelectorAll("[data-i]").forEach(b => b.onclick = () => pick(Number(b.dataset.i)));
+}
+
+function pick(i){
+  const h = HITS[i];
+  if(!h) return;
+  picked = i;
+  $("ref").value = h.price;
+  if(h.image){ $("fImg").value = h.image; syncPhotoPreview(); }
+  $("hits").querySelectorAll("[data-i]").forEach(b =>
+    b.setAttribute("aria-pressed", Number(b.dataset.i) === i));
+}
+
+/* ═══ 사진 : 골라서 Supabase Storage에 올리기 ═══════════════ */
+function syncPhotoPreview(){
+  const url = $("fImg").value.trim();
+  $("photoPrev").src = url || "";
+  $("photoPrev").style.visibility = url ? "visible" : "hidden";
+  $("photoClear").style.display = url ? "" : "none";
+}
+
+function clearPhoto(){
+  $("fImg").value = "";
+  $("photoFile").value = "";
+  $("photoState").textContent = "";
+  $("photoState").className = "photo-state";
+  syncPhotoPreview();
+}
+
+async function uploadPhoto(file){
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024){
+    $("photoState").textContent = "5MB보다 작은 사진으로 골라주세요";
+    $("photoState").className = "photo-state err";
+    return;
+  }
+
+  $("photoState").textContent = "올리는 중…";
+  $("photoState").className = "photo-state";
+
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error } = await sb.storage.from("product-images").upload(path, file, {
+    cacheControl: "31536000", upsert: false,
+  });
+
+  if(error){
+    $("photoState").textContent = "올리지 못했습니다: " + error.message;
+    $("photoState").className = "photo-state err";
+    return;
+  }
+
+  const { data } = sb.storage.from("product-images").getPublicUrl(path);
+  $("fImg").value = data.publicUrl;
+  syncPhotoPreview();
+  $("photoState").textContent = "올렸습니다";
+  $("photoState").className = "photo-state ok";
+}
+
+/* ═══ 저장 ═══════════════════════════════════════════════ */
+async function save(){
+  const it = QUEUE[0];
+  const ref = Number($("ref").value);
+  if(!ref){ toast("시중가를 넣어주세요"); $("ref").focus(); return; }
+
+  const q  = Number($("fQ").value)  || null;
+  const u  = $("fU").value.trim()   || null;
+  const rq = Number($("fRQ").value) || q;
+  const ru = $("fRU").value.trim()  || u;
+
+  $("save").disabled = true;
+  const { error } = await sb.from("products").insert({
+    name: it.name,
+    cat: $("fCat").value,
+    mart: it.price,
+    img: $("fImg").value.trim() || null,
+    q, u, ref, rq, ru,
+    ref_date: today(), added: today(), hidden: false
+  });
+  $("save").disabled = false;
+
+  if(error){ toast("저장 실패: " + error.message); return; }
+  QUEUE.shift();
+  toast("등록했습니다");
+  render();
+}
+
+boot();
+</script>
+</body>
+</html>
