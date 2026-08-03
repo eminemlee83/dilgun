@@ -9,6 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#EDE1C7">
 <title>딜군 · 일괄 등록</title>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -169,8 +170,8 @@ tr.bad td{background:var(--lose-bg)}
 
 <script type="module">
 /* ── Supabase 설정 : catalog_admin.html과 같은 값 ── */
-const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const SUPABASE_URL = (window.DILGUN||{}).SUPABASE_URL;
+const SUPABASE_ANON_KEY = (window.DILGUN||{}).SUPABASE_ANON_KEY;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* catalog_admin.html 과 동일하게 유지하세요 */

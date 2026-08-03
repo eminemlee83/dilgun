@@ -9,6 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#EDE1C7">
 <title>딜군 · 시세 관리</title>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
@@ -334,8 +335,8 @@ select{padding:5px 7px;border:1px solid var(--rule);border-radius:3px}
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Supabase 설정 : 본인 프로젝트 값으로 교체 ── */
-const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const SUPABASE_URL = (window.DILGUN||{}).SUPABASE_URL;
+const SUPABASE_ANON_KEY = (window.DILGUN||{}).SUPABASE_ANON_KEY;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ── Anthropic Claude Vision API 설정 ── */
