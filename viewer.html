@@ -139,6 +139,44 @@ button{font-family:inherit;cursor:pointer}
 .tag.pick{background:#FAF0DC;color:var(--gold-dk)}
 
 /* ─── 안내/빈 화면 ───────────────────────────────── */
+/* ─── 순위 · 접이식 목록 ─────────────────────────── */
+.rank-hd{display:flex;align-items:baseline;gap:9px;padding:4px 2px 12px;margin-top:2px}
+.rank-hd h2{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.rank-hd .n{margin-left:auto;font-size:12px;color:var(--faint);font-family:var(--mono)}
+.rank-hd.warn h2{color:var(--lose)}
+
+.rank-badge{
+  position:absolute;left:-1px;top:12px;background:var(--deep);color:#fff;
+  font-family:var(--mono);font-size:11px;font-weight:800;
+  padding:3px 8px 3px 10px;border-radius:0 8px 8px 0;letter-spacing:-.02em;
+}
+.rank-badge.top3{background:var(--gold-dk)}
+.card.ranked{padding-top:20px}
+
+.section-gap{height:22px}
+
+.fold-btn{
+  width:100%;padding:12px;border:1px dashed var(--rule);border-radius:12px;
+  background:none;font-size:13px;font-weight:700;color:var(--dim);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.fold-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.3;transition:transform .2s}
+.fold-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+
+.condensed{display:none;flex-direction:column;gap:1px;background:var(--paper);
+           border:1px solid var(--rule);border-radius:12px;overflow:hidden;margin-top:8px}
+.condensed.on{display:flex}
+.crow{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--rule)}
+.crow:last-child{border-bottom:none}
+.crow .em{font-size:16px;flex:0 0 auto}
+.crow .cn{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .cp{font-family:var(--mono);font-size:12.5px;font-weight:800;color:var(--win);flex:0 0 auto}
+
+.unknown-note{
+  margin-top:16px;padding:11px 14px;border-radius:10px;background:var(--wash);
+  font-size:12px;color:var(--faint);text-align:center;
+}
+
 .blank{padding:64px 26px;text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7}
 .blank b{display:block;color:var(--ink);font-size:16px;font-weight:800;margin-bottom:7px}
 
@@ -298,9 +336,10 @@ function buildChips(){
 }
 
 /* ═══ 카드 ═══════════════════════════════════════════════ */
-function card(it){
+function card(it, rank){
   const j = judge(it);
   const known = j.v !== "unknown";
+  const badge = rank ? `<span class="rank-badge${rank <= 3 ? " top3" : ""}">${rank}위</span>` : "";
 
   /* 용량이 서로 다를 수 있으니 각 가격 옆에 얼마어치인지 붙입니다 */
   const qty = (n, u) => (n && u) ? `<span class="qty">/${esc(n)}${esc(u)}</span>` : "";
@@ -361,7 +400,8 @@ function card(it){
     it.ref_date ? `<span class="tag">시중가 ${esc(it.ref_date)}</span>` : ""
   ].filter(Boolean).join("");
 
-  return `<article class="card v-${j.v}">
+  return `<article class="card v-${j.v}${rank ? " ranked" : ""}">
+    ${badge}
     <div class="hd">
       <div class="tile">${it.emoji || "📦"}${
         it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" onerror="this.remove()">` : ""
@@ -404,19 +444,14 @@ function render(){
 
   const scored = list.map(it => ({ it, j: judge(it) }));
 
-  if(TAB === "verdict"){
-    /* 이득이 큰 순서. 판정 불가는 뒤로 */
-    scored.sort((x, y) =>
-      (x.it.pick === y.it.pick ? 0 : (y.it.pick ? 1 : 0) - (x.it.pick ? 1 : 0)) ||
-      ((x.j.pct ?? 9999) - (y.j.pct ?? 9999)));
-  } else {
-    scored.sort((x, y) => x.it.name.localeCompare(y.it.name, "ko"));
-  }
+  if(TAB === "verdict") return renderVerdict(scored);
 
-  $("lede").innerHTML =
-    TAB === "verdict" ? `PX가 시중가보다 싼 순서입니다 · <b>${won(scored.length)}개</b>`
-  : TAB === "saved"   ? `저장한 상품 <b>${won(scored.length)}개</b>`
-  : `검색 결과 <b>${won(scored.length)}개</b>`;
+  /* 검색 · 저장 : 이름순 그대로 나열 */
+  scored.sort((x, y) => x.it.name.localeCompare(y.it.name, "ko"));
+
+  $("lede").innerHTML = TAB === "saved"
+    ? `저장한 상품 <b>${won(scored.length)}개</b>`
+    : `검색 결과 <b>${won(scored.length)}개</b>`;
 
   if(!scored.length){
     $("stage").innerHTML = `<div class="blank">${
@@ -430,7 +465,83 @@ function render(){
   }
 
   $("stage").innerHTML = `<div class="list">${scored.map(s => card(s.it)).join("")}</div>`;
+  bindCardEvents();
+}
 
+/* ═══ 판정 탭 : "싼가?"가 아니라 "뭐가 제일 이득인가?" ═════
+   전부 초록불이면 배지 자체가 정보가 아닙니다.
+   그래서 여기서는 순서와 예외를 정보로 씁니다.          */
+function renderVerdict(scored){
+  const known  = scored.filter(s => s.j.v !== "unknown");
+  const unknown = scored.length - known.length;
+
+  known.sort((x, y) => (x.j.pct ?? 0) - (y.j.pct ?? 0)); // 가장 싼(음수 큰) 순
+
+  const warn = known.filter(s => s.j.v === "lose" || s.j.v === "same");
+  const wins = known.filter(s => s.j.v === "win" || s.j.v === "win2");
+  const TOP  = 10;
+  const top  = wins.slice(0, TOP);
+  const rest = wins.slice(TOP);
+
+  $("lede").innerHTML = wins.length
+    ? `단가 기준 이득률 순위입니다 · <b>${won(known.length)}개</b> 비교됨`
+    : `아직 비교할 수 있는 상품이 없습니다`;
+
+  if(!known.length && !unknown){
+    $("stage").innerHTML = `<div class="blank"><b>아직 등록된 상품이 없습니다</b>관리자 화면에서 상품과 시중가를 넣어주세요.</div>`;
+    return;
+  }
+
+  let html = "";
+
+  if(top.length){
+    html += `<div class="rank-hd"><h2>지금 가장 이득</h2><span class="n">TOP ${top.length}</span></div>`;
+    html += `<div class="list">${top.map((s, i) => card(s.it, i + 1)).join("")}</div>`;
+  }
+
+  if(warn.length){
+    html += `<div class="section-gap"></div>
+      <div class="rank-hd warn"><h2>시중과 비슷하거나 더 비쌉니다</h2><span class="n">${warn.length}개</span></div>
+      <div class="list">${warn.map(s => card(s.it)).join("")}</div>`;
+  }
+
+  if(rest.length){
+    html += `<div class="section-gap"></div>
+      <button class="fold-btn" id="foldRest" aria-expanded="false">
+        나머지 이득 상품 ${won(rest.length)}개 더보기
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="condensed" id="restList">
+        ${rest.map(s => `<div class="crow">
+          <span class="em">${s.it.emoji || "📦"}</span>
+          <span class="cn">${esc(s.it.name)}</span>
+          <span class="cp num">${Math.abs(s.j.pct).toFixed(0)}% 저렴</span>
+        </div>`).join("")}
+      </div>`;
+  }
+
+  if(unknown){
+    html += `<div class="unknown-note">시중가 확인 전 상품 ${won(unknown)}개는 판정에서 빠졌습니다</div>`;
+  }
+
+  if(!html){
+    html = `<div class="blank"><b>표시할 상품이 없습니다</b>다른 분류나 검색어로 시도해 보세요.</div>`;
+  }
+
+  $("stage").innerHTML = html;
+  bindCardEvents();
+
+  const foldBtn = $("foldRest");
+  if(foldBtn){
+    foldBtn.onclick = () => {
+      const open = foldBtn.getAttribute("aria-expanded") === "true";
+      foldBtn.setAttribute("aria-expanded", String(!open));
+      $("restList").classList.toggle("on", !open);
+    };
+  }
+}
+
+function bindCardEvents(){
   $("stage").querySelectorAll(".save").forEach(b => b.onclick = () => {
     const id = b.dataset.id;
     if(SAVED.has(id)) SAVED.delete(id); else SAVED.add(id);
