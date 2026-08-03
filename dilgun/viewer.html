@@ -41,25 +41,6 @@ button{font-family:inherit;cursor:pointer}
 
 /* ─── 상단 : 검색 + 분류 ─────────────────────────── */
 .top{position:sticky;top:0;z-index:30;background:var(--wash);padding:12px 14px 0}
-
-.brand-bar{display:flex;align-items:center;gap:8px;padding-bottom:10px}
-.brand-mark{width:26px;height:26px;border-radius:7px;flex:0 0 auto}
-.brand-name{font-size:15.5px;font-weight:800;letter-spacing:-.3px;color:var(--deep)}
-.brand-sub{font-size:11.5px;color:var(--faint);font-family:var(--mono)}
-.share-btn{
-  margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--rule);
-  background:var(--paper);display:grid;place-items:center;flex:0 0 auto;
-}
-.share-btn svg{width:16px;height:16px;stroke:var(--dim);fill:var(--dim);stroke-width:0}
-
-.install-bar{
-  display:flex;align-items:center;gap:10px;background:var(--deep);color:#fff;
-  border-radius:12px;padding:11px 12px;margin-bottom:10px;font-size:12.5px;font-weight:600;
-}
-.install-bar span{flex:1;line-height:1.4}
-.install-bar button{border:none;border-radius:8px;font-weight:700;font-family:inherit;cursor:pointer}
-#installGo{background:var(--gold);color:var(--deep);padding:8px 13px;font-size:12.5px;flex:0 0 auto}
-#installClose{background:none;color:#CFC9B8;font-size:15px;padding:2px 4px;flex:0 0 auto}
 .search-wrap{position:relative}
 .search{
   width:100%;padding:12px 14px 12px 40px;border:1px solid var(--rule);
@@ -251,21 +232,6 @@ button{font-family:inherit;cursor:pointer}
 <body>
 
 <header class="top" id="top">
-  <div class="brand-bar">
-    <img class="brand-mark" src="icon.svg" alt="">
-    <span class="brand-name">딜군</span>
-    <span class="brand-sub" id="brandSub"></span>
-    <button class="share-btn" id="shareBtn" aria-label="공유">
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg>
-    </button>
-  </div>
-
-  <div class="install-bar" id="installBar" hidden>
-    <span id="installTxt">홈 화면에 추가하면 앱처럼 바로 열립니다</span>
-    <button id="installGo">추가하기</button>
-    <button id="installClose" aria-label="닫기">✕</button>
-  </div>
-
   <div class="search-wrap">
     <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
       <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
@@ -301,8 +267,8 @@ button{font-family:inherit;cursor:pointer}
 
 <script type="module">
 /* ═══ 프로젝트 설정 ═══════════════════════════════════════ */
-const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const SUPABASE_URL = "https://zxbiwyjlnkiyglbxxsof.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_BtUydzGa1D7zX-dYpaQ_7Q_aRusBj56";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const $ = id => document.getElementById(id);
@@ -357,7 +323,6 @@ async function load(){
     return;
   }
   ITEMS = data;
-  $("brandSub").textContent = `상품 ${won(ITEMS.length)}개`;
   buildChips();
   render();
 }
@@ -671,75 +636,6 @@ $("tabs").querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
   render();
   if(TAB === "search") $("search").focus();
 });
-
-/* ═══ 공유 ═══════════════════════════════════════════════ */
-function toast(msg){
-  let el = document.getElementById("toastEl");
-  if(!el){
-    el = document.createElement("div");
-    el.id = "toastEl";
-    el.style.cssText = "position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);"
-      + "background:var(--deep);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;"
-      + "font-weight:600;transition:bottom .25s;z-index:60";
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  requestAnimationFrame(() => el.style.bottom = "22px");
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.style.bottom = "-60px", 1800);
-}
-
-$("shareBtn").onclick = async () => {
-  const url = location.origin + location.pathname;
-  if(navigator.share){
-    try{ await navigator.share({ title: "딜군", text: "PX 가격, 진짜 싼지 딜군에서 확인해보세요", url }); }
-    catch{ /* 취소는 무시 */ }
-  } else {
-    try{ await navigator.clipboard.writeText(url); toast("링크를 복사했습니다"); }
-    catch{ toast(url); }
-  }
-};
-
-/* ═══ 홈 화면에 추가 ═══════════════════════════════════════
-   설치 배너는 이미 앱으로 실행 중이거나, 사용자가 닫은 적 있으면 안 띄웁니다. */
-const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-  || window.navigator.standalone === true;
-const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-let deferredInstall = null;
-
-if(!isStandalone && !store.get("dilgun.installHidden", false)){
-  if(isIOS){
-    $("installTxt").textContent = "공유 버튼을 누르고 “홈 화면에 추가”를 선택하세요";
-    $("installGo").style.display = "none";
-    $("installBar").hidden = false;
-  } else {
-    window.addEventListener("beforeinstallprompt", e => {
-      e.preventDefault();
-      deferredInstall = e;
-      $("installBar").hidden = false;
-    });
-  }
-}
-
-$("installGo").onclick = async () => {
-  if(!deferredInstall) return;
-  deferredInstall.prompt();
-  await deferredInstall.userChoice;
-  deferredInstall = null;
-  $("installBar").hidden = true;
-};
-
-$("installClose").onclick = () => {
-  $("installBar").hidden = true;
-  store.set("dilgun.installHidden", true);
-};
-
-window.addEventListener("appinstalled", () => { $("installBar").hidden = true; });
-
-/* ═══ 오프라인에서도 아이콘·틀은 뜨도록 ═══════════════════ */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js").catch(() => {});
-}
 
 load();
 </script>
