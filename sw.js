@@ -3,9 +3,9 @@
    아이콘·매니페스트 같은 안 바뀌는 파일만 캐시해서, 설치된 앱이
    빨리 뜨고 오프라인에서도 화면 틀은 보이게 합니다. */
 
-const CACHE = "dilgun-shell-v1";
+const CACHE = "dilgun-shell-v2";
 const SHELL = [
-  "icon.svg", "favicon.ico", "manifest.json",
+  "icon.svg", "mascot.svg", "favicon.ico", "manifest.json",
   "icon-192.png", "icon-512.png", "apple-touch-icon.png",
 ];
 

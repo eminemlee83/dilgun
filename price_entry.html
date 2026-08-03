@@ -406,13 +406,15 @@ async function save(){
   const ru = $("fRU").value.trim()  || u;
 
   $("save").disabled = true;
+  const today_ = today();
   const { error } = await sb.from("products").insert({
     name: it.name,
     cat: $("fCat").value,
     mart: it.price,
     img: $("fImg").value.trim() || null,
     q, u, ref, rq, ru,
-    ref_date: today(), added: today(), hidden: false
+    hist: [{ d: today_, m: it.price, r: ref }],
+    ref_date: today_, added: today_, hidden: false
   });
   $("save").disabled = false;
 
