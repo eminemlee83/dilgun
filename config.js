@@ -3,6 +3,6 @@
    그러면 키를 다시 넣을 일이 없습니다. */
 
 window.DILGUN = {
-  SUPABASE_URL: "https://YOUR-PROJECT-ID.supabase.co",
-  SUPABASE_ANON_KEY: "YOUR-ANON-PUBLIC-KEY",
+  SUPABASE_URL: "https://zxbiwyjlnkiyglbxxsof.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_BtUydzGa1D7zX-dYpaQ_7Q_aRusBj56",
 };
