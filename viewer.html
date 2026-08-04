@@ -48,12 +48,10 @@ img{display:block}
 
 /* ═══ 머리 ═══════════════════════════════════════════════ */
 .hero{position:relative;background:var(--deep);overflow:hidden;color:#fff;text-align:center;
-      padding:calc(env(safe-area-inset-top) + 12px) 56px 18px}
+      padding:calc(env(safe-area-inset-top) + 16px) 56px 18px}
 .hero-tx{position:relative;z-index:2}
-.hero h1{font-size:23px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+.hero h1{font-size:22px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
 .hero p{font-size:12.5px;color:#B3BCA3;margin-top:4px;font-weight:600}
-.hero-mascot{display:block;margin:0 auto 4px;width:88px;height:93px;
-             position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.25))}
 .hbtn{position:absolute;top:calc(env(safe-area-inset-top) + 12px);width:34px;height:34px;
       border-radius:11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);
       display:grid;place-items:center;z-index:5}
@@ -63,14 +61,12 @@ img{display:block}
 /* 작은 머리 (목록 탭) */
 .hero.slim{padding:calc(env(safe-area-inset-top) + 14px) 56px 15px}
 .hero.slim h1{font-size:18px;letter-spacing:-.5px}
-.hero.slim .hero-mascot{display:none}
 
 /* 흰 머리 (상세) */
 .hero.sheet{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line);
             padding:calc(env(safe-area-inset-top) + 12px) 96px 13px}
 .hero.sheet h1{font-size:16px;font-weight:800;letter-spacing:-.4px;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hero.sheet .hero-mascot{display:none}
 .hero.sheet .hbtn{border-color:var(--rule);background:var(--wash);top:calc(env(safe-area-inset-top) + 10px)}
 .hero.sheet .hbtn svg{stroke:var(--ink)}
 
@@ -338,7 +334,6 @@ img{display:block}
   <button class="hbtn l" id="hLeft" aria-label="뒤로" hidden>
     <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
-  <img class="hero-mascot" id="mascot" src="mascot.svg" alt="">
   <div class="hero-tx"><h1 id="hTitle">딜군</h1><p id="hSub">오늘 PX에서 사면 좋은 것</p></div>
   <button class="hbtn r2" id="hFav" aria-label="저장" hidden>
     <svg viewBox="0 0 24 24"><path d="M12 20.5S4 15.6 4 10.2A4.2 4.2 0 0112 7.6a4.2 4.2 0 018 2.6c0 5.4-8 10.3-8 10.3z"/></svg>
