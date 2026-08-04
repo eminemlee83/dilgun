@@ -47,42 +47,27 @@ img{display:block}
 .chev{width:16px;height:16px;stroke:var(--arrow);fill:none;stroke-width:2.6;flex:0 0 auto}
 
 /* ═══ 머리 ═══════════════════════════════════════════════ */
-.hero{position:relative;background:var(--deep);overflow:hidden;color:#fff;
-      padding:calc(env(safe-area-inset-top) + 14px) 16px 16px}
-.hero-tx{position:relative;z-index:2;padding-right:100px}
-.hero h1{font-size:24px;font-weight:800;letter-spacing:-.9px;line-height:1.15}
-.hero p{font-size:13px;color:#B3BCA3;margin-top:4px;font-weight:600}
-.hero-mascot{position:absolute;right:6px;top:calc(env(safe-area-inset-top) + 6px);
-             width:104px;height:110px;pointer-events:none;z-index:1;
-             filter:drop-shadow(0 4px 12px rgba(0,0,0,.25))}
+.hero{position:relative;background:var(--deep);overflow:hidden;color:#fff;text-align:center;
+      padding:calc(env(safe-area-inset-top) + 12px) 56px 18px}
+.hero-tx{position:relative;z-index:2}
+.hero h1{font-size:23px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+.hero p{font-size:12.5px;color:#B3BCA3;margin-top:4px;font-weight:600}
+.hero-mascot{display:block;margin:0 auto 4px;width:88px;height:93px;
+             position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.25))}
 .hbtn{position:absolute;top:calc(env(safe-area-inset-top) + 12px);width:34px;height:34px;
       border-radius:11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);
       display:grid;place-items:center;z-index:5}
 .hbtn.l{left:12px} .hbtn.r{right:12px} .hbtn.r2{right:54px}
 .hbtn svg{width:17px;height:17px;stroke:#D6D2C3;fill:none;stroke-width:1.9}
 
-/* 헤더 안 안내 배너 */
-.tipbar{position:relative;z-index:2;margin-top:16px;background:rgba(255,255,255,.96);
-        border-radius:13px;padding:12px 14px;display:flex;gap:11px;align-items:center;
-        width:100%;box-shadow:0 3px 12px rgba(0,0,0,.16)}
-.tipbar .ic{font-size:18px;flex:0 0 auto}
-.tipbar .tx{flex:1;min-width:0}
-.tipbar .t1{font-size:13px;font-weight:700;color:var(--ink);line-height:1.4;display:block}
-.tipbar .t2{font-size:11.5px;color:var(--gold-dk);margin-top:3px;display:block;font-weight:700}
-.tipbar .rt{flex:0 0 auto;text-align:right;padding-left:10px;border-left:1px solid var(--line)}
-.tipbar .rt .k{font-size:9.5px;color:var(--faint);font-weight:600;display:block}
-.tipbar .rt .v{font-family:var(--mono);font-size:11.5px;font-weight:800;color:var(--ink);display:block;margin-top:2px}
-
 /* 작은 머리 (목록 탭) */
-.hero.slim{padding:calc(env(safe-area-inset-top) + 13px) 16px 15px}
-.hero.slim .hero-tx{padding-right:44px}
+.hero.slim{padding:calc(env(safe-area-inset-top) + 14px) 56px 15px}
 .hero.slim h1{font-size:18px;letter-spacing:-.5px}
 .hero.slim .hero-mascot{display:none}
 
 /* 흰 머리 (상세) */
 .hero.sheet{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line);
-            padding:calc(env(safe-area-inset-top) + 12px) 56px 13px;text-align:center}
-.hero.sheet .hero-tx{padding:0}
+            padding:calc(env(safe-area-inset-top) + 12px) 96px 13px}
 .hero.sheet h1{font-size:16px;font-weight:800;letter-spacing:-.4px;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hero.sheet .hero-mascot{display:none}
@@ -353,6 +338,7 @@ img{display:block}
   <button class="hbtn l" id="hLeft" aria-label="뒤로" hidden>
     <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
+  <img class="hero-mascot" id="mascot" src="mascot.svg" alt="">
   <div class="hero-tx"><h1 id="hTitle">딜군</h1><p id="hSub">오늘 PX에서 사면 좋은 것</p></div>
   <button class="hbtn r2" id="hFav" aria-label="저장" hidden>
     <svg viewBox="0 0 24 24"><path d="M12 20.5S4 15.6 4 10.2A4.2 4.2 0 0112 7.6a4.2 4.2 0 018 2.6c0 5.4-8 10.3-8 10.3z"/></svg>
@@ -360,8 +346,6 @@ img{display:block}
   <button class="hbtn r" id="hRight" aria-label="검색">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
   </button>
-  <img class="hero-mascot" id="mascot" src="mascot.svg" alt="">
-  <button class="tipbar" id="tipbar" hidden></button>
 </header>
 
 <div class="bar" id="bar" hidden>
@@ -955,14 +939,12 @@ function render(){
     $("hFav").querySelector("path").setAttribute("fill", on ? "#B4432A" : "none");
     $("hFav").querySelector("path").setAttribute("stroke", on ? "#B4432A" : "currentColor");
   }
-  $("tipbar").hidden = !isHome;
   $("bar").hidden = !!DETAIL || !(SEARCH || TAB === "hot" || TAB === "event" || TAB === "new");
   $("chips").querySelectorAll("[data-c]").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.c === cat));
   $("tabs").querySelectorAll("[data-t]").forEach(b =>
     b.setAttribute("aria-selected", !DETAIL && !SEARCH && b.dataset.t === TAB));
 
-  if(isHome) buildTip();
   if(DETAIL) return detail();
   if(SEARCH) return searchView();
   if(TAB === "home")  return home();
@@ -970,31 +952,6 @@ function render(){
   if(TAB === "event") return eventTab();
   if(TAB === "new")   return newTab();
   myTab();
-}
-
-function buildTip(){
-  const wins = ITEMS.map(it => ({ it, j: judge(it) })).filter(s => s.j.pct != null && s.j.pct < 0);
-  const byCat = {};
-  wins.forEach(s => { const c = s.it.cat || "기타"; (byCat[c] = byCat[c] || []).push(Math.abs(s.j.pct)); });
-  let best = null;
-  Object.entries(byCat).forEach(([c, a]) => {
-    if(a.length < 2) return;
-    const avg = a.reduce((x, y) => x + y, 0) / a.length;
-    if(!best || avg > best.avg) best = { c, avg };
-  });
-  const n = ITEMS.filter(isNew).length;
-  const last = ITEMS.map(i => i.ref_date).filter(Boolean).sort().pop();
-  $("tipbar").innerHTML = `<span class="ic">💡</span>
-    <span class="tx">
-      <span class="t1">${best ? `이번 주는 <b>${esc(best.c)}</b>이 특히 저렴해요!`
-                              : `시중가를 더 채우면 분류별 이득을 알려드려요`}</span>
-      <span class="t2">${n ? `신규상품 ${won(n)}개가 등록됐어요 🔥`
-                           : `상품 ${won(ITEMS.length)}개를 지켜보는 중`}</span>
-    </span>
-    <span class="rt"><span class="k">시중가 확인일</span>
-      <span class="v">${last ? esc(last) : "-"}</span>
-      <span class="k">${last ? `${days(last)}일 전` : "확인 전"}</span></span>`;
-  $("tipbar").onclick = () => switchTab("hot");
 }
 
 function switchTab(t){
