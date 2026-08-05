@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E3B28">
+<title>딜군 · 사진 등록</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --olive:#4E6144; --deep:#2E3B28; --gold:#D2A55C; --gold-dk:#A67C3A;
+  --sand:#EDE1C7; --sand-dp:#E2D2B2; --wash:#F5F2EA; --paper:#fff;
+  --rule:#E6E0D3; --ink:#1E231B; --dim:#6B6F63; --faint:#8E9082;
+  --win:#2C7A4B; --win-bg:#EBF6EF; --lose:#B4432A;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--wash);color:var(--ink);font-size:14px;
+     line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:40px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.board{background:var(--deep);color:#fff;padding:16px 18px}
+.board .mark{font-size:15.5px;font-weight:800}
+.board .mark span{color:#AEB59D;font-weight:600;margin-left:5px}
+
+main{max-width:520px;margin:0 auto;padding:14px}
+
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-tr{flex:1;height:6px;background:var(--rule);border-radius:99px;overflow:hidden}
+.bar-fl{height:100%;background:var(--olive);border-radius:99px;transition:width .25s}
+.bar-n{font-size:12px;color:var(--dim);white-space:nowrap}
+.bar-n b{color:var(--ink);font-family:var(--mono)}
+
+.opts{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:2px 1px}
+.opts label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--dim)}
+.opts input[type=checkbox]{width:16px;height:16px;accent-color:var(--olive)}
+.opts .sep{margin-left:auto;font-size:12px;color:var(--faint)}
+
+.qbox{display:flex;gap:7px;margin-bottom:14px}
+.qbox input{flex:1;padding:10px 12px;border:1px solid var(--rule);border-radius:9px;
+            font-size:13.5px;font-family:inherit}
+.qbox button{padding:10px 14px;border:1px solid var(--rule);background:var(--paper);
+             border-radius:9px;font-size:13px;font-weight:700;color:var(--dim)}
+
+.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:16px;padding:18px}
+
+.photo-area{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:16px}
+.photo-prev{
+  width:180px;height:180px;border-radius:16px;background:var(--wash);
+  border:1px solid var(--rule);object-fit:contain;display:none;margin-bottom:12px;padding:8px;
+}
+.photo-empty{
+  width:180px;height:180px;border-radius:16px;background:var(--wash);
+  border:2px dashed var(--rule);display:flex;align-items:center;justify-content:center;
+  font-size:40px;margin-bottom:12px;color:var(--faint);
+}
+.photo-pick{
+  padding:12px 22px;border-radius:99px;background:var(--olive);color:#fff;
+  font-size:14px;font-weight:800;display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+}
+.photo-pick input{display:none}
+.photo-state{font-size:12px;color:var(--faint);margin-top:9px;min-height:16px}
+.photo-state.ok{color:var(--win);font-weight:700}
+.photo-state.err{color:var(--lose);font-weight:700}
+.photo-clear{font-size:12px;color:var(--dim);text-decoration:underline;margin-top:6px;
+             background:none;border:none;padding:2px}
+
+.nm{font-size:17px;font-weight:800;text-align:center;letter-spacing:-.3px;margin-bottom:2px}
+.sub{font-size:12.5px;color:var(--faint);text-align:center;margin-bottom:16px}
+
+.fld{margin-bottom:12px}
+.fld label{font-size:11.5px;color:var(--dim);font-weight:700;display:block;margin-bottom:5px}
+.fld input,.fld select{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:8px;
+                       font-size:13.5px;font-family:inherit}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--olive)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.more{font-size:12.5px;color:var(--olive);font-weight:700;cursor:pointer;
+      display:inline-block;margin-bottom:12px;user-select:none}
+.detail{display:none}
+.detail.on{display:block}
+
+.acts{display:flex;gap:8px;margin-top:4px}
+.btn{border:none;background:var(--olive);color:#fff;font-weight:700;font-size:14px;
+     padding:13px;border-radius:10px;flex:1}
+.btn.ghost{background:var(--paper);color:var(--dim);border:1px solid var(--rule);flex:0 0 96px}
+.btn:disabled{opacity:.4}
+
+.blank{padding:56px 20px;text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7}
+.blank b{display:block;color:var(--ink);font-size:16px;font-weight:800;margin-bottom:7px}
+
+.toast{position:fixed;left:50%;bottom:-60px;transform:translateX(-50%);background:var(--deep);
+       color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:600;
+       transition:bottom .25s;z-index:50}
+.toast.on{bottom:22px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="board">
+  <div class="mark">딜군<span>사진 등록</span></div>
+</div>
+
+<main>
+  <div class="bar">
+    <div class="bar-tr"><div class="bar-fl" id="pfill" style="width:0%"></div></div>
+    <div class="bar-n"><b id="pdone">0</b> / <b id="ptotal">0</b> 사진 있음</div>
+  </div>
+  <div class="opts">
+    <label><input type="checkbox" id="onlyMissing" checked> 사진 없는 것만</label>
+    <span class="sep" id="qcount"></span>
+  </div>
+  <div class="qbox">
+    <input id="q" placeholder="상품명으로 바로 찾기">
+    <button id="btnFind">찾기</button>
+  </div>
+  <div id="stage"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+const CFG = window.DILGUN || {};
+const sb = (CFG.SUPABASE_URL && !CFG.SUPABASE_URL.includes("YOUR-PROJECT"))
+  ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
+
+const $ = id => document.getElementById(id);
+const won = n => (n ?? 0).toLocaleString("ko-KR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CATS = ["화장품","식품","음료","생활용품","건강","의류","전자","유아동","반려동물","기타"];
+
+let ALL = [], QUEUE = [], pos = 0;
+
+function toast(m){
+  $("toast").textContent = m;
+  $("toast").classList.add("on");
+  setTimeout(() => $("toast").classList.remove("on"), 1600);
+}
+
+/* ═══ 시작 ═══════════════════════════════════════════════ */
+async function boot(){
+  if(!sb){
+    $("stage").innerHTML = `<div class="blank"><b>설정이 끝나지 않았습니다</b>config.js에 키를 넣어주세요.</div>`;
+    return;
+  }
+  const { data, error } = await sb.from("products")
+    .select("id,name,cat,mart,img").eq("hidden", false).order("name");
+  if(error){
+    $("stage").innerHTML = `<div class="blank"><b>불러오지 못했습니다</b>${esc(error.message)}</div>`;
+    return;
+  }
+  ALL = data;
+  applyFilter();
+}
+
+function applyFilter(){
+  const term = $("q").value.trim().toLowerCase();
+  const onlyMissing = $("onlyMissing").checked;
+  QUEUE = ALL.filter(it =>
+    (!onlyMissing || !it.img) &&
+    (!term || it.name.toLowerCase().includes(term)));
+  pos = 0;
+  progress();
+  render();
+}
+
+function progress(){
+  const withPhoto = ALL.filter(it => it.img).length;
+  $("pdone").textContent = won(withPhoto);
+  $("ptotal").textContent = won(ALL.length);
+  $("pfill").style.width = ALL.length ? `${withPhoto / ALL.length * 100}%` : "0%";
+  $("qcount").textContent = QUEUE.length ? `${won(QUEUE.length)}개 남음` : "";
+}
+
+/* ═══ 카드 ═══════════════════════════════════════════════ */
+function render(){
+  if(!QUEUE.length){
+    $("stage").innerHTML = `<div class="blank"><b>여기까지입니다</b>
+      ${$("onlyMissing").checked ? "사진 없는 상품을 다 돌았습니다." : "검색 결과가 없습니다."}</div>`;
+    return;
+  }
+  if(pos >= QUEUE.length) pos = 0;
+  const it = QUEUE[pos];
+
+  $("stage").innerHTML = `
+    <div class="sheet">
+      <div class="photo-area">
+        <img class="photo-prev" id="prev" alt="">
+        <div class="photo-empty" id="empty">📦</div>
+        <label class="photo-pick">
+          📷 사진 ${it.img ? "바꾸기" : "선택하기"}
+          <input type="file" id="file" accept="image/*" capture="environment">
+        </label>
+        <div class="photo-state" id="state"></div>
+        <button class="photo-clear" id="clearBtn" style="display:${it.img ? "" : "none"}">사진 지우기</button>
+      </div>
+
+      <div class="nm">${esc(it.name)}</div>
+      <div class="sub">${esc(it.cat) || "미분류"} · ${won(it.mart)}원</div>
+
+      <span class="more" id="more">이름 · 가격 수정</span>
+      <div class="detail" id="detail">
+        <div class="fld"><label>상품명</label><input id="fName" value="${esc(it.name)}"></div>
+        <div class="pair">
+          <div class="fld"><label>카테고리</label>
+            <select id="fCat">${CATS.map(c => `<option ${c === it.cat ? "selected" : ""}>${c}</option>`).join("")}</select>
+          </div>
+          <div class="fld"><label>PX가</label><input id="fPrice" type="number" value="${it.mart ?? ""}"></div>
+        </div>
+        <button class="btn ghost" id="saveFields" style="width:100%;margin-bottom:12px">정보 저장</button>
+      </div>
+
+      <div class="acts">
+        <button class="btn ghost" id="prevBtn">이전</button>
+        <button class="btn" id="nextBtn">다음 상품</button>
+      </div>
+    </div>`;
+
+  syncPreview(it.img);
+
+  $("more").onclick = () => $("detail").classList.toggle("on");
+  $("file").onchange = e => uploadPhoto(it, e.target.files[0]);
+  $("clearBtn").onclick = () => clearPhoto(it);
+  $("prevBtn").onclick = () => { pos = (pos - 1 + QUEUE.length) % QUEUE.length; render(); };
+  $("nextBtn").onclick = () => { pos = (pos + 1) % QUEUE.length; render(); };
+  $("saveFields").onclick = () => saveFields(it);
+}
+
+function syncPreview(url){
+  $("prev").src = url || "";
+  $("prev").style.display = url ? "block" : "none";
+  $("empty").style.display = url ? "none" : "flex";
+}
+
+/* ═══ 사진 업로드 : 고르는 즉시 저장됩니다 ═══════════════ */
+async function uploadPhoto(it, file){
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024){
+    $("state").textContent = "5MB보다 작은 사진으로 골라주세요";
+    $("state").className = "photo-state err";
+    return;
+  }
+  $("state").textContent = "올리는 중…";
+  $("state").className = "photo-state";
+
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error: upErr } = await sb.storage.from("product-images")
+    .upload(path, file, { cacheControl: "31536000", upsert: false });
+  if(upErr){
+    $("state").textContent = "올리지 못했습니다: " + upErr.message;
+    $("state").className = "photo-state err";
+    return;
+  }
+
+  const { data } = sb.storage.from("product-images").getPublicUrl(path);
+  const { error: saveErr } = await sb.from("products").update({ img: data.publicUrl }).eq("id", it.id);
+  if(saveErr){
+    $("state").textContent = "저장하지 못했습니다: " + saveErr.message;
+    $("state").className = "photo-state err";
+    return;
+  }
+
+  it.img = data.publicUrl;
+  const ref = ALL.find(x => x.id === it.id); if(ref) ref.img = data.publicUrl;
+  syncPreview(it.img);
+  $("state").textContent = "저장했습니다";
+  $("state").className = "photo-state ok";
+  $("clearBtn").style.display = "";
+  document.querySelector(".photo-pick").innerHTML =
+    `📷 사진 바꾸기<input type="file" id="file" accept="image/*" capture="environment">`;
+  $("file").onchange = e => uploadPhoto(it, e.target.files[0]);
+  progress();
+  toast("사진을 저장했습니다");
+}
+
+async function clearPhoto(it){
+  const { error } = await sb.from("products").update({ img: null }).eq("id", it.id);
+  if(error){ toast("지우지 못했습니다"); return; }
+  it.img = null;
+  const ref = ALL.find(x => x.id === it.id); if(ref) ref.img = null;
+  progress();
+  render();
+}
+
+/* ═══ 이름·카테고리·가격 수정 ═══════════════════════════ */
+async function saveFields(it){
+  const btn = $("saveFields");
+  btn.disabled = true;
+  const patch = {
+    name: $("fName").value.trim() || it.name,
+    cat: $("fCat").value,
+    mart: Number($("fPrice").value) || it.mart,
+  };
+  const { error } = await sb.from("products").update(patch).eq("id", it.id);
+  btn.disabled = false;
+  if(error){ toast("저장하지 못했습니다: " + error.message); return; }
+  Object.assign(it, patch);
+  const ref = ALL.find(x => x.id === it.id); if(ref) Object.assign(ref, patch);
+  toast("정보를 저장했습니다");
+  render();
+}
+
+/* ═══ 조작 ═══════════════════════════════════════════════ */
+$("onlyMissing").onchange = applyFilter;
+$("btnFind").onclick = applyFilter;
+$("q").onkeydown = e => { if(e.key === "Enter") applyFilter(); };
+
+boot();
+</script>
+</body>
+</html>

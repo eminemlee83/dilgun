@@ -8,11 +8,11 @@
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2E3B28">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>딜군 — PX에서 사면 좋은 것</title>
+<meta name="apple-mobile-web-app-title" content="군픽">
+<title>군픽 — PX에서 픽한 것들 (이름 프로토타입)</title>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -27,6 +27,7 @@
   --win:#2C7A4B; --win-bg:#EBF6EF; --win-line:#BEDECB;
   --same:#8A6A20; --same-bg:#FBF3DE; --same-line:#E9DAB6;
   --lose:#B4432A; --lose-bg:#FDF0EB; --lose-line:#EFCCBD;
+  --tab-on:#E7ECE0;
   --sh-xs:0 1px 2px rgba(30,35,27,.05);
   --sh-sm:0 1px 4px rgba(30,35,27,.06);
   --sh-md:0 2px 10px rgba(30,35,27,.07);
@@ -48,30 +49,26 @@ img{display:block}
 
 /* ═══ 머리 ═══════════════════════════════════════════════ */
 .hero{position:relative;background:var(--deep);overflow:hidden;color:#fff;text-align:center;
-      padding:calc(env(safe-area-inset-top) + 15px) 64px 18px}
+      padding:calc(env(safe-area-inset-top) + 16px) 56px 18px}
 .hero-tx{position:relative;z-index:2}
-.hero .brand{font-size:12px;font-weight:800;color:var(--gold-lt);letter-spacing:.6px;
-             display:block;margin-bottom:3px}
-.hero h1{font-size:21px;font-weight:800;letter-spacing:-.7px;line-height:1.2}
-.hero p{display:none}
-.hbtn{position:absolute;top:calc(env(safe-area-inset-top) + 14px);width:40px;height:40px;
-      border-radius:13px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.09);
+.hero h1{font-size:22px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+.hero p{font-size:12.5px;color:#B3BCA3;margin-top:4px;font-weight:600}
+.hbtn{position:absolute;top:calc(env(safe-area-inset-top) + 12px);width:34px;height:34px;
+      border-radius:11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);
       display:grid;place-items:center;z-index:5}
-.hbtn.l{left:12px} .hbtn.r{right:12px} .hbtn.r2{right:58px}
-.hbtn svg{width:21px;height:21px;stroke:#E4E0D2;fill:none;stroke-width:2}
+.hbtn.l{left:12px} .hbtn.r{right:12px} .hbtn.r2{right:54px}
+.hbtn svg{width:17px;height:17px;stroke:#D6D2C3;fill:none;stroke-width:1.9}
 
 /* 작은 머리 (목록 탭) */
-.hero.slim{padding:calc(env(safe-area-inset-top) + 17px) 64px 16px}
+.hero.slim{padding:calc(env(safe-area-inset-top) + 14px) 56px 15px}
 .hero.slim h1{font-size:18px;letter-spacing:-.5px}
-.hero.slim .brand{display:none}
 
 /* 흰 머리 (상세) */
 .hero.sheet{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line);
-            padding:calc(env(safe-area-inset-top) + 15px) 104px 14px}
+            padding:calc(env(safe-area-inset-top) + 12px) 96px 13px}
 .hero.sheet h1{font-size:16px;font-weight:800;letter-spacing:-.4px;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hero.sheet .brand{display:none}
-.hero.sheet .hbtn{border-color:var(--rule);background:var(--wash);top:calc(env(safe-area-inset-top) + 12px)}
+.hero.sheet .hbtn{border-color:var(--rule);background:var(--wash);top:calc(env(safe-area-inset-top) + 10px)}
 .hero.sheet .hbtn svg{stroke:var(--ink)}
 
 /* ═══ 구역 제목 ═════════════════════════════════════════ */
@@ -126,11 +123,8 @@ img{display:block}
 .rc-name{font-size:12.5px;font-weight:700;line-height:1.35;height:34px;
          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rc-vol{font-size:10.5px;color:var(--faint);margin-top:2px}
-.rc-pricerow{display:flex;align-items:baseline;gap:5px;margin-top:7px;flex-wrap:wrap}
-.rc-price{font-family:var(--mono);font-size:16px;font-weight:800;
-          letter-spacing:-.5px}
-.rc-ref{font-size:10.5px;color:var(--faint);text-decoration:line-through}
-.rc-save{font-size:10.5px;font-weight:800;color:var(--win);margin-top:3px;display:block}
+.rc-price{font-family:var(--mono);font-size:16px;font-weight:800;margin-top:7px;
+          letter-spacing:-.5px;display:block}
 .rc-bdg{margin-top:6px;display:block}
 
 /* ═══ 목록 행 ═══════════════════════════════════════════ */
@@ -138,7 +132,7 @@ img{display:block}
        border-radius:16px;overflow:hidden;box-shadow:var(--sh-xs)}
 .rw-wrap{position:relative;border-bottom:1px solid var(--line)}
 .rw-wrap:last-child{border-bottom:none}
-.rw{display:flex;align-items:center;gap:12px;padding:15px 14px;width:100%}
+.rw{display:flex;align-items:center;gap:12px;padding:18px 14px;width:100%}
 .rw-no{width:24px;height:24px;border-radius:99px;flex:0 0 auto;display:grid;place-items:center;
        font-family:var(--mono);font-size:11px;font-weight:800;background:var(--wash);color:var(--dim)}
 .rw-no.m1{background:var(--gold);color:#fff}
@@ -263,15 +257,15 @@ img{display:block}
 .sortbar button[aria-pressed="true"]{background:var(--wash);border-color:var(--olive);color:var(--olive)}
 
 /* ═══ 후원 ═══════════════════════════════════════════════ */
-.spon{margin:20px 14px 0;background:var(--sand);border:1px solid var(--sand-dp);
-      border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:11px;box-shadow:var(--sh-xs)}
-.spon .hi{width:32px;height:32px;border-radius:99px;background:var(--gold);color:#fff;
-          display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+.spon{margin:22px 14px 0;background:var(--sand);border:1px solid var(--sand-dp);
+      border-radius:18px;padding:15px;display:flex;align-items:center;gap:13px;box-shadow:var(--sh-xs)}
+.spon .hi{width:42px;height:42px;border-radius:99px;background:var(--gold);color:#fff;
+          display:grid;place-items:center;font-size:19px;flex:0 0 auto}
 .spon .tx{flex:1;min-width:0}
-.spon .t1{font-size:12.5px;font-weight:700;display:block;color:var(--deep)}
-.spon .t2{font-size:11px;color:var(--gold-dk);margin-top:2px;display:block;line-height:1.45}
-.spon .go{flex:0 0 auto;background:var(--deep);color:#fff;font-size:12px;font-weight:800;
-          padding:9px 14px;border-radius:99px;white-space:nowrap}
+.spon .t1{font-size:13.5px;font-weight:800;display:block;color:var(--deep)}
+.spon .t2{font-size:11.5px;color:var(--gold-dk);margin-top:2px;display:block;line-height:1.45}
+.spon .go{flex:0 0 auto;background:var(--deep);color:#fff;font-size:12.5px;font-weight:800;
+          padding:11px 16px;border-radius:99px;white-space:nowrap}
 .spon .go[disabled]{background:var(--sand-dp);color:var(--gold-dk);cursor:default}
 .pledge{margin:11px 14px 0;background:var(--deep);border-radius:18px;padding:18px;color:#fff}
 .pledge .stamp{display:inline-block;font-size:10.5px;font-weight:800;color:var(--gold);
@@ -318,12 +312,16 @@ img{display:block}
       grid-template-columns:repeat(5,1fr);background:var(--paper);
       border-top:1px solid var(--rule);padding-bottom:env(safe-area-inset-bottom);
       box-shadow:0 -2px 10px rgba(30,35,27,.05)}
-.tab{padding:10px 0 11px;display:flex;flex-direction:column;align-items:center;gap:3px;
+.tab{padding:9px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;
      font-size:10.5px;font-weight:700;color:var(--faint);text-align:center;position:relative}
-.tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;
-         stroke-linecap:round;stroke-linejoin:round}
+.tab .ic-wrap{width:38px;height:27px;display:flex;align-items:center;justify-content:center;
+              border-radius:10px;transition:background .15s}
+.tab[aria-selected="true"] .ic-wrap{background:var(--tab-on)}
+.tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
+         stroke-linecap:round;stroke-linejoin:round;transition:stroke-width .15s}
+.tab[aria-selected="true"] svg{stroke-width:2.3}
 .tab[aria-selected="true"]{color:var(--olive)}
-.tab .dot{position:absolute;top:6px;right:calc(50% - 20px);min-width:17px;height:17px;
+.tab .dot{position:absolute;top:3px;right:calc(50% - 21px);min-width:17px;height:17px;
           padding:0 5px;border-radius:99px;background:var(--olive);color:#fff;
           font-size:9.5px;font-weight:800;display:grid;place-items:center}
 
@@ -341,12 +339,8 @@ img{display:block}
   <button class="hbtn l" id="hLeft" aria-label="뒤로" hidden>
     <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
-  <div class="hero-tx">
-    <span class="brand" id="hBrand">딜군</span>
-    <h1 id="hTitle">오늘 사면 좋은 것</h1>
-    <p id="hSub"></p>
-  </div>
-  <button class="hbtn r2" id="hFav" aria-label="저장">
+  <div class="hero-tx"><h1 id="hTitle">군픽</h1><p id="hSub">오늘 PX에서 픽한 것들</p></div>
+  <button class="hbtn r2" id="hFav" aria-label="저장" hidden>
     <svg viewBox="0 0 24 24"><path d="M12 20.5S4 15.6 4 10.2A4.2 4.2 0 0112 7.6a4.2 4.2 0 018 2.6c0 5.4-8 10.3-8 10.3z"/></svg>
   </button>
   <button class="hbtn r" id="hRight" aria-label="검색">
@@ -370,19 +364,19 @@ img{display:block}
 
 <nav class="tabs" id="tabs" role="tablist">
   <button class="tab" role="tab" data-t="home" aria-selected="true">
-    <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>홈
+    <span class="ic-wrap"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg></span>홈
   </button>
   <button class="tab" role="tab" data-t="hot" aria-selected="false">
-    <svg viewBox="0 0 24 24"><path d="M12 3s5 4.2 5 8.6a5 5 0 01-10 0C7 8.4 12 3 12 3z"/><path d="M12 21a4 4 0 004-4c0-2-4-5-4-5s-4 3-4 5a4 4 0 004 4z"/></svg>인기
+    <span class="ic-wrap"><svg viewBox="0 0 24 24"><path d="M12 3s5 4.2 5 8.6a5 5 0 01-10 0C7 8.4 12 3 12 3z"/><path d="M12 21a4 4 0 004-4c0-2-4-5-4-5s-4 3-4 5a4 4 0 004 4z"/></svg></span>인기
   </button>
   <button class="tab" role="tab" data-t="event" aria-selected="false">
-    <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13"/><path d="M12 8S9.5 3.5 7.5 5.2 9.6 8 12 8zM12 8s2.5-4.5 4.5-2.8S14.4 8 12 8z"/></svg>이벤트
+    <span class="ic-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13"/><path d="M12 8S9.5 3.5 7.5 5.2 9.6 8 12 8zM12 8s2.5-4.5 4.5-2.8S14.4 8 12 8z"/></svg></span>이벤트
   </button>
   <button class="tab" role="tab" data-t="new" aria-selected="false">
-    <svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>신규
+    <span class="ic-wrap"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></span>신규
   </button>
   <button class="tab" role="tab" data-t="my" aria-selected="false">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/></svg>마이
+    <span class="ic-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/></svg></span>마이
   </button>
 </nav>
 
@@ -487,18 +481,12 @@ function badges(){
 
 /* ═══ 조각 ═══════════════════════════════════════════════ */
 function railCard(s, tag){
-  const known = s.j.v !== "unknown";
-  const d = known ? diffOf(s.it, s.j) : null;
-  const cheap = known && s.j.pct < 0;
   return `<button class="rc" data-id="${esc(s.it.id)}">
     ${tag ? `<span class="rc-tag ${tag.k}">${tag.t}</span>` : ""}
     ${pic(s.it, "rc-img")}
     <span class="rc-name">${esc(s.it.name)}</span>
     <span class="rc-vol">${esc(vol(s.it))}</span>
-    <span class="rc-pricerow">
-      <span class="rc-price num">${won(s.it.mart)}원</span>
-      ${known ? `<span class="rc-ref num">${won(s.it.ref)}원</span>` : ""}</span>
-    ${known && cheap ? `<span class="rc-save num">${d.scaled ? "같은 양이면 " : ""}${won(d.amt)}원 절약</span>` : ""}
+    <span class="rc-price num">${won(s.it.mart)}원</span>
     <span class="rc-bdg">${bdg(s.j)}</span></button>`;
 }
 function listRow(s, i, showWhy){
@@ -535,8 +523,9 @@ function bindRows(){
 }
 const sponsor = () => `<div class="spon">
     <span class="hi">♥</span>
-    <span class="tx"><span class="t1">도움이 되셨다면 응원해주세요</span></span>
-    <button class="go" data-go="my">응원하기</button></div>`;
+    <span class="tx"><span class="t1">도움이 되셨다면 후원으로 응원해주세요.</span>
+      <span class="t2">협찬 대신 후원을 받습니다. 판정은 팔지 않습니다.</span></span>
+    <button class="go" data-go="my">후원하기</button></div>`;
 
 /* 정렬 */
 function sortScored(arr){
@@ -598,19 +587,6 @@ function home(){
     h += `<div class="sec"><span class="nb">NEW</span><h2>신규 상품</h2>
         <button class="more" data-go="new">더보기 ${CHEV}</button></div>
       <div class="rail">${fresh.slice(0, 12).map(s => railCard(s, { k:"new", t:"NEW" })).join("")}</div>`;
-  }
-  /* 인기 TOP 5 — 홈이 길어지지 않게 5개만, 나머지는 인기 탭으로 */
-  if(wins.length > 1){
-    h += `<div class="sec"><span class="em">👑</span><h2>인기 상품 TOP ${Math.min(wins.length, 5)}</h2>
-        <button class="more" data-go="hot">더보기 ${CHEV}</button></div>
-      <div class="ranks">${wins.slice(0, 5).map((s, i) => listRow(s, i, false)).join("")}</div>`;
-  }
-  /* 화장품은 시중가 차이가 커서 따로 모아둡니다 */
-  const beauty = wins.filter(s => s.it.cat === "화장품");
-  if(beauty.length >= 2){
-    h += `<div class="sec"><span class="em">💄</span><h2>화장품은 여기가 싸요</h2>
-        <button class="more" data-go="hot">더보기 ${CHEV}</button></div>
-      <div class="rail">${beauty.slice(0, 12).map(s => railCard(s, null)).join("")}</div>`;
   }
   h += sponsor() + `<div class="end"></div>`;
   $("stage").innerHTML = h;
@@ -712,7 +688,7 @@ function myTab(){
     : `<div class="pending">아직 저장한 상품이 없습니다.<br>목록의 하트를 누르면 여기 모입니다.</div>`;
   h += `<div class="spon" style="margin-top:22px">
       <span class="hi">♥</span>
-      <span class="tx"><span class="t1">도움이 되셨다면 응원해주세요</span>
+      <span class="tx"><span class="t1">도움이 되셨다면 후원으로 응원해주세요.</span>
         <span class="t2">준비 중입니다. 열리면 이 자리에서 바로 하실 수 있습니다.</span></span>
       <button class="go" disabled>준비 중</button></div>
     <div class="pledge">
@@ -935,7 +911,7 @@ function openDetail(id){ DETAIL = id; window.scrollTo({ top:0 }); render(); }
 
 /* ═══ 화면 전환 ═════════════════════════════════════════ */
 const TITLE = {
-  home:["오늘 사면 좋은 것", ""],
+  home:["군픽","오늘 PX에서 픽한 것들"],
   hot:["인기 상품","단가가 싼 순서입니다"],
   event:["이벤트","지금 행사 중인 상품"],
   new:["신규 상품","최근 30일 안에 들어온 것"],
@@ -957,15 +933,12 @@ function render(){
   $("hSub").style.display = s ? "" : "none";
   $("hLeft").hidden = !(DETAIL || SEARCH);
   $("hRight").hidden = !!DETAIL;
-
-  /* 하트 : 홈에서는 저장함 바로가기, 상세에서는 저장 토글 */
-  $("hFav").hidden = !(DETAIL || isHome);
-  $("hFav").setAttribute("aria-label", DETAIL ? "저장" : "저장한 상품");
-  const on = DETAIL && item && SAVED.has(item.id);
-  const p = $("hFav").querySelector("path");
-  p.setAttribute("fill", on ? "#D2A55C" : "none");
-  p.setAttribute("stroke", on ? "#D2A55C" : "currentColor");
-
+  $("hFav").hidden = !DETAIL;
+  if(DETAIL && item){
+    const on = SAVED.has(item.id);
+    $("hFav").querySelector("path").setAttribute("fill", on ? "#B4432A" : "none");
+    $("hFav").querySelector("path").setAttribute("stroke", on ? "#B4432A" : "currentColor");
+  }
   $("bar").hidden = !!DETAIL || !(SEARCH || TAB === "hot" || TAB === "event" || TAB === "new");
   $("chips").querySelectorAll("[data-c]").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.c === cat));
@@ -991,7 +964,7 @@ $("hLeft").onclick = () => {
 };
 $("hRight").onclick = () => { if(SEARCH) return shareUrl(); SEARCH = true; render(); $("q").focus(); };
 $("hFav").onclick = () => {
-  if(!DETAIL) return switchTab("my");
+  if(!DETAIL) return;
   if(SAVED.has(DETAIL)) SAVED.delete(DETAIL); else SAVED.add(DETAIL);
   store.set("dilgun.saved", [...SAVED]);
   render();
@@ -1018,7 +991,7 @@ function toast(m){
 async function shareUrl(text){
   const url = location.origin + location.pathname;
   const body = text || "PX 가격, 진짜 싼지 확인해보세요";
-  if(navigator.share){ try{ await navigator.share({ title:"딜군", text:body, url }); }catch{} }
+  if(navigator.share){ try{ await navigator.share({ title:"군픽", text:body, url }); }catch{} }
   else { try{ await navigator.clipboard.writeText(`${body}\n${url}`); toast("링크를 복사했습니다"); }
          catch{ toast(url); } }
 }
