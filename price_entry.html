@@ -108,6 +108,17 @@ main{max-width:520px;margin:0 auto;padding:14px}
                        font-size:14px;font-family:inherit}
 .fld input:focus,.fld select:focus{outline:none;border-color:var(--olive)}
 .fld.big input{font-family:var(--mono);font-size:21px;font-weight:800;padding:12px 14px}
+.fld.ship{margin-top:10px}
+.fld.ship input{font-size:14px}
+
+.exclude-row{display:flex;justify-content:flex-end;margin-top:8px}
+.exclude-link{font-size:11.5px;color:var(--faint);text-decoration:underline;
+              background:none;border:none;padding:2px 0}
+
+.ship-total{
+  font-size:12px;color:var(--dim);text-align:right;margin:-4px 0 13px;font-weight:600;
+}
+.ship-total b{font-family:var(--mono);color:var(--ink);font-weight:800}
 .pair{display:grid;grid-template-columns:1fr 88px;gap:8px}
 
 .more{font-size:12.5px;color:var(--olive);font-weight:700;cursor:pointer;
@@ -179,7 +190,8 @@ function toast(msg){
 /* ═══ 남은 상품 추리기 ═══════════════════════════════════ */
 async function boot(){
   const [{ data: cat, error: e1 }, { data: prod, error: e2 }] = await Promise.all([
-    sb.from("catalog_items").select("name,brand,price,category,q,u").order("created_at"),
+    sb.from("catalog_items").select("id,name,brand,price,category,q,u")
+      .eq("excluded", false).order("created_at"),
     sb.from("products").select("name")
   ]);
   if(e1 || e2){
@@ -225,6 +237,9 @@ function render(){
         <span class="vl">${won(it.price)}원</span>
         <span class="qt ${hasQty ? "" : "warn"}">${hasQty ? esc(it.q) + esc(it.u) : "용량 미확인"}</span>
       </div>
+      <div class="exclude-row">
+        <button class="exclude-link" id="excludeBtn">이 상품은 비교 제외</button>
+      </div>
 
       <div class="find">
         <div class="find-hd">
@@ -259,6 +274,11 @@ function render(){
         <label>시중가</label>
         <input type="number" id="ref" inputmode="numeric" placeholder="위에서 고르거나 직접 입력">
       </div>
+      <div class="fld ship">
+        <label>배송비 (무료배송 상품이면 비워두세요)</label>
+        <input type="number" id="shipFee" inputmode="numeric" placeholder="0">
+      </div>
+      <div class="ship-total" id="shipTotal"></div>
 
       <span class="more" id="more">용량 · 카테고리 확인 ${hasQty && catOk ? "" : "⚠️"}</span>
 
@@ -295,11 +315,32 @@ function render(){
   $("btnFind").onclick = () => find($("q").value);
   $("photoFile").onchange = e => uploadPhoto(e.target.files[0]);
   $("photoClear").onclick = clearPhoto;
+  $("excludeBtn").onclick = () => excludeItem(it);
   syncPhotoPreview();
   $("q").onkeydown    = e => { if(e.key === "Enter") find($("q").value); };
   $("ref").onkeydown  = e => { if(e.key === "Enter") save(); };
+  $("ref").oninput = $("shipFee").oninput = syncShipTotal;
+  syncShipTotal();
 
   find(q0);
+}
+
+function syncShipTotal(){
+  const ref = Number($("ref").value) || 0;
+  const ship = Number($("shipFee").value) || 0;
+  $("shipTotal").innerHTML = ship
+    ? `제품가 ${won(ref)}원 + 배송비 ${won(ship)}원 = <b>${won(ref + ship)}원</b>`
+    : "";
+}
+
+async function excludeItem(it){
+  if(!confirm(`"${it.name}"\n이 상품을 비교 대상에서 제외할까요?\n다음부터 목록에 안 보입니다.`)) return;
+  const { error } = await sb.from("catalog_items").update({ excluded: true }).eq("id", it.id);
+  if(error){ toast("제외하지 못했습니다: " + error.message); return; }
+  TOTAL -= 1;
+  QUEUE.shift();
+  toast("비교 대상에서 제외했습니다");
+  render();
 }
 
 /* ═══ 네이버 조회 ════════════════════════════════════════ */
@@ -349,6 +390,7 @@ function pick(i){
   if(!h) return;
   picked = i;
   $("ref").value = h.price;
+  syncShipTotal();
   if(h.image){ $("fImg").value = h.image; syncPhotoPreview(); }
   $("hits").querySelectorAll("[data-i]").forEach(b =>
     b.setAttribute("aria-pressed", Number(b.dataset.i) === i));
@@ -404,8 +446,10 @@ async function uploadPhoto(file){
 /* ═══ 저장 ═══════════════════════════════════════════════ */
 async function save(){
   const it = QUEUE[0];
-  const ref = Number($("ref").value);
-  if(!ref){ toast("시중가를 넣어주세요"); $("ref").focus(); return; }
+  const refBase = Number($("ref").value);
+  if(!refBase){ toast("시중가를 넣어주세요"); $("ref").focus(); return; }
+  const ship = Number($("shipFee").value) || 0;
+  const ref = refBase + ship;   // 저장되는 시중가는 배송비까지 합친 실제 결제액입니다
 
   const name = $("fName").value.trim() || it.name;
   const q  = Number($("fQ").value)  || null;
