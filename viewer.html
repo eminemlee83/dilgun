@@ -584,8 +584,10 @@ function home(){
   }
 
   let h = "";
+  const used = new Set();   // 이미 한 번 보여준 상품 — 다음 섹션은 가급적 피해서 고릅니다
   const top = wins[0];
   if(top){
+    used.add(top.it.id);
     const d = diffOf(top.it, top.j);
     const likes = Number(top.it.likes) || 0;
     h += `<div class="sec"><span class="em">🔥</span><h2>오늘의 MUST BUY</h2>
@@ -615,14 +617,19 @@ function home(){
         <button class="more" data-go="new">더보기 ${CHEV}</button></div>
       <div class="rail">${fresh.slice(0, 12).map(s => railCard(s, { k:"new", t:"NEW" })).join("")}</div>`;
   }
-  /* 인기 TOP — 가로로 훑고, 전체는 인기 탭에서 */
-  if(wins.length > 1){
-    h += `<div class="sec"><span class="em">👑</span><h2>인기 상품 TOP ${Math.min(wins.length, 10)}</h2>
+  /* 인기 TOP — MUST BUY에 이미 쓴 상품은 빼고, 이 줄 안에서 다시 1위부터 매깁니다 */
+  const topPool = wins.filter(s => !used.has(s.it.id));
+  if(topPool.length){
+    const topShown = topPool.slice(0, 10);
+    topShown.forEach(s => used.add(s.it.id));
+    h += `<div class="sec"><span class="em">👑</span><h2>인기 상품 TOP ${topShown.length}</h2>
         <button class="more" data-go="hot">더보기 ${CHEV}</button></div>
-      <div class="rail">${wins.slice(0, 10).map((s, i) => railCard(s, null, i + 1)).join("")}</div>`;
+      <div class="rail">${topShown.map((s, i) => railCard(s, null, i + 1)).join("")}</div>`;
   }
   /* 분류별 이득 줄 — 어떤 분류가 뜨는지는 데이터가 정합니다.
-     상품이 늘면 저절로 바뀌고, 3개 미만인 분류는 표본이 얕아 건너뜁니다. */
+     상품이 늘면 저절로 바뀌고, 3개 미만인 분류는 표본이 얕아 건너뜁니다.
+     위에서 이미 보여준 상품은 가급적 피하되, 그러면 3개가 안 채워지는
+     분류는 겹치더라도 원래 목록대로 보여줍니다 — 줄이 비는 것보다 낫습니다. */
   const CAT_EMOJI = {
     화장품:"💄", 식품:"🍜", 음료:"🥤", 생활용품:"🧴", 건강:"💊",
     의류:"👕", 전자:"🔌", 유아동:"🧸", 반려동물:"🐾", 기타:"📦",
@@ -639,10 +646,12 @@ function home(){
     .slice(0, 3);
 
   catRails.forEach(g => {
+    const fresh_ = g.arr.filter(s => !used.has(s.it.id));
+    const rowItems = fresh_.length >= 3 ? fresh_ : g.arr;
     h += `<div class="sec"><span class="em">${CAT_EMOJI[g.cat] || "📦"}</span>
         <h2>${esc(g.cat)}은 여기가 싸요</h2>
         <button class="more" data-cat="${esc(g.cat)}">더보기 ${CHEV}</button></div>
-      <div class="rail">${g.arr.slice(0, 12).map(s => railCard(s, null)).join("")}</div>`;
+      <div class="rail">${rowItems.slice(0, 12).map(s => railCard(s, null)).join("")}</div>`;
   });
 
   h += sponsor() + `<div class="end"></div>`;
