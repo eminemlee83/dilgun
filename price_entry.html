@@ -41,7 +41,13 @@ main{max-width:520px;margin:0 auto;padding:14px}
 
 .sheet{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:18px;margin-bottom:12px}
 
-.nm{font-size:18px;font-weight:800;letter-spacing:-.3px;line-height:1.3}
+.nm{
+  font-size:18px;font-weight:800;letter-spacing:-.3px;line-height:1.3;
+  width:100%;border:1px solid transparent;border-radius:8px;padding:6px 8px;
+  margin:-6px -8px 0;background:transparent;font-family:inherit;color:var(--ink);
+}
+.nm:hover{background:var(--wash)}
+.nm:focus{outline:none;border-color:var(--olive);background:var(--paper)}
 .br{font-size:12.5px;color:var(--faint);margin-top:3px}
 
 .px{display:flex;align-items:baseline;gap:9px;padding:11px 13px;background:var(--wash);
@@ -211,7 +217,7 @@ function render(){
 
   $("stage").innerHTML = `
     <div class="sheet">
-      <div class="nm">${esc(it.name)}</div>
+      <input class="nm" id="fName" value="${esc(it.name)}" placeholder="상품명">
       <div class="br">${esc(it.brand) || "브랜드 정보 없음"}</div>
 
       <div class="px">
@@ -232,6 +238,20 @@ function render(){
         <div class="hits" id="hits"></div>
         <div class="state" id="state">찾는 중…</div>
       </div>
+
+      <div class="fld" style="margin-top:14px;margin-bottom:0">
+        <label>제품 사진</label>
+        <div class="photo-row">
+          <img class="photo-prev" id="photoPrev" alt="">
+          <label class="photo-pick">
+            📷 사진 선택
+            <input type="file" id="photoFile" accept="image/*" capture="environment">
+          </label>
+          <button class="photo-clear" id="photoClear" type="button" style="display:none">지우기</button>
+        </div>
+        <div class="photo-state" id="photoState"></div>
+        <input type="hidden" id="fImg">
+      </div>
     </div>
 
     <div class="sheet">
@@ -240,25 +260,12 @@ function render(){
         <input type="number" id="ref" inputmode="numeric" placeholder="위에서 고르거나 직접 입력">
       </div>
 
-      <span class="more" id="more">용량 · 카테고리 · 사진 ${hasQty && catOk ? "" : "⚠️"}</span>
+      <span class="more" id="more">용량 · 카테고리 확인 ${hasQty && catOk ? "" : "⚠️"}</span>
 
       <div class="detail ${hasQty && catOk ? "" : "on"}" id="detail">
         <div class="fld">
           <label>카테고리</label>
           <select id="fCat">${CATS.map(c => `<option ${c === it.category ? "selected" : ""}>${c}</option>`).join("")}</select>
-        </div>
-        <div class="fld">
-          <label>제품 사진</label>
-          <div class="photo-row">
-            <img class="photo-prev" id="photoPrev" alt="">
-            <label class="photo-pick">
-              📷 사진 선택
-              <input type="file" id="photoFile" accept="image/*" capture="environment">
-            </label>
-            <button class="photo-clear" id="photoClear" type="button" style="display:none">지우기</button>
-          </div>
-          <div class="photo-state" id="photoState"></div>
-          <input type="hidden" id="fImg">
         </div>
         <div class="fld">
           <label>PX가 기준 용량</label>
@@ -400,6 +407,7 @@ async function save(){
   const ref = Number($("ref").value);
   if(!ref){ toast("시중가를 넣어주세요"); $("ref").focus(); return; }
 
+  const name = $("fName").value.trim() || it.name;
   const q  = Number($("fQ").value)  || null;
   const u  = $("fU").value.trim()   || null;
   const rq = Number($("fRQ").value) || q;
@@ -408,7 +416,7 @@ async function save(){
   $("save").disabled = true;
   const today_ = today();
   const { error } = await sb.from("products").insert({
-    name: it.name,
+    name,
     cat: $("fCat").value,
     mart: it.price,
     img: $("fImg").value.trim() || null,
