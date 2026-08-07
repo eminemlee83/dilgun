@@ -108,6 +108,14 @@ main{max-width:520px;margin:0 auto;padding:14px}
                        font-size:14px;font-family:inherit}
 .fld input:focus,.fld select:focus{outline:none;border-color:var(--olive)}
 .fld.big input{font-family:var(--mono);font-size:21px;font-weight:800;padding:12px 14px}
+.fld.mult{background:var(--wash);border-radius:10px;padding:11px 12px;margin-top:10px}
+.fld.mult label{color:var(--ink);font-weight:800}
+.mult-row{display:flex;align-items:center;gap:9px}
+.mult-row input{width:74px;font-family:var(--mono);font-size:18px;font-weight:800;
+                text-align:center;padding:9px 6px}
+.mult-unit{font-size:13px;color:var(--dim);font-weight:600}
+.mult-hint{font-size:11px;color:var(--faint);margin-top:6px}
+.fld-sub{font-weight:600;color:var(--faint);font-size:10.5px}
 .fld.ship{margin-top:10px}
 .fld.ship input{font-size:14px}
 
@@ -274,6 +282,17 @@ function render(){
         <label>시중가</label>
         <input type="number" id="ref" inputmode="numeric" placeholder="위에서 고르거나 직접 입력">
       </div>
+
+      ${hasQty ? `
+      <div class="fld mult">
+        <label>이 시중가는 PX 몇 배 용량인가요?</label>
+        <div class="mult-row">
+          <input type="number" id="mult" min="1" step="any" value="1">
+          <span class="mult-unit">× ${esc(it.q)}${esc(it.u)}</span>
+        </div>
+        <p class="mult-hint">낱개면 1, 10개 묶음이면 10, 5배 대용량이면 5</p>
+      </div>` : ""}
+
       <div class="fld ship">
         <label>배송비 (무료배송 상품이면 비워두세요)</label>
         <input type="number" id="shipFee" inputmode="numeric" placeholder="0">
@@ -295,7 +314,7 @@ function render(){
           </div>
         </div>
         <div class="fld">
-          <label>시중가 기준 용량 (다르면 수정)</label>
+          <label>시중가 기준 용량 <span class="fld-sub">(위 배수로 자동 계산됩니다 · 단위가 아예 다르면 여기서 직접 수정)</span></label>
           <div class="pair">
             <input type="number" id="fRQ" step="any" value="${it.q ?? ""}" placeholder="수량">
             <input type="text" id="fRU" value="${it.u ?? ""}" placeholder="g / ml / 개">
@@ -322,8 +341,20 @@ function render(){
   $("ref").oninput = $("shipFee").oninput = syncShipTotal;
   syncShipTotal();
 
+  if(hasQty){
+    const mult = $("mult");
+    mult.oninput = () => {
+      const m = Number(mult.value) || 1;
+      $("fRQ").value = round4(it.q * m);
+      $("fRU").value = it.u;
+    };
+  }
+
   find(q0);
 }
+
+/* 부동소수 곱셈에서 300.00000004 같은 값이 안 남게 */
+function round4(n){ return Math.round(n * 10000) / 10000; }
 
 function syncShipTotal(){
   const ref = Number($("ref").value) || 0;
